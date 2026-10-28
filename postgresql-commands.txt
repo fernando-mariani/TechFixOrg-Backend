@@ -1,0 +1,12 @@
+CREATE TYPE origem as ENUM('EMAIL', 'FORMS', 'WHATSAPP');
+
+CREATE TABLE pedidos(
+	id UUID PRIMARY KEY NOT NULL,
+	titulo varchar(100) NOT NULL,
+	descricao varchar(300) NOT NULL,
+	imagem varchar(300),
+	origem origem NOT NULL,
+	tecnico varchar(100),
+	data_marcada TIMESTAMP,
+	data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
