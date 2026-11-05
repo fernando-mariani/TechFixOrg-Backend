@@ -3,8 +3,11 @@ package io.github.fernando_mariani.TechFixOrg.dto;
 import io.github.fernando_mariani.TechFixOrg.entity.PedidosEntity.Origem;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Size;
+import org.springframework.format.annotation.DateTimeFormat;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public record PedidosDTO(
@@ -20,6 +23,7 @@ public record PedidosDTO(
         Origem origem,
         @Size(max = 100, message = "O técnico deve ter no máximo 100 caracteres.")
         String tecnico,
-        LocalDateTime dataMarcada
+        @Past(message = "Insira uma data válida")
+        LocalDate dataMarcada
 ) {
 }
