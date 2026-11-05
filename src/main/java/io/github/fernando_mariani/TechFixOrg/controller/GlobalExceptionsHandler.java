@@ -1,6 +1,8 @@
 package io.github.fernando_mariani.TechFixOrg.controller;
 
 import io.github.fernando_mariani.TechFixOrg.exceptions.AcaoInvalida;
+import io.github.fernando_mariani.TechFixOrg.exceptions.CredenciaisInvalidas;
+import io.github.fernando_mariani.TechFixOrg.exceptions.NaoVerificado;
 import io.github.fernando_mariani.TechFixOrg.exceptions.NaoEncontrado;
 import io.github.fernando_mariani.TechFixOrg.exceptions.RegistroDuplicado;
 import io.github.fernando_mariani.TechFixOrg.response.ErroResponse;
@@ -18,6 +20,16 @@ import java.util.stream.Collectors;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionsHandler {
+
+    @ExceptionHandler(NaoVerificado.class)
+    public ResponseEntity<ErroResponse> naoVerificado(NaoVerificado exception) {
+        return responder(HttpStatus.FORBIDDEN, exception.getMessage());
+    }
+
+    @ExceptionHandler(CredenciaisInvalidas.class)
+    public ResponseEntity<ErroResponse> credenciaisInvalidas(CredenciaisInvalidas exception) {
+        return responder(HttpStatus.UNAUTHORIZED, exception.getMessage());
+    }
 
     @ExceptionHandler(NaoEncontrado.class)
     public ResponseEntity<ErroResponse> naoEncontrado(NaoEncontrado exception) {

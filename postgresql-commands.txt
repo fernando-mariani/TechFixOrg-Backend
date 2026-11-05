@@ -10,3 +10,13 @@ CREATE TABLE pedidos(
 	data_marcada TIMESTAMP,
 	data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE usuarios(
+	id UUID PRIMARY KEY,
+	nome varchar(100) NOT NULL,
+	email varchar(255) NOT NULL,
+	senha varchar(300) NOT NULL,
+	role varchar(50) NOT NULL DEFAULT 'USER',
+	verificado BOOLEAN NOT NULL DEFAULT FALSE,
+	data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
