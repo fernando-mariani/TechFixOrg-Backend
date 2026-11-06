@@ -5,14 +5,14 @@ import io.github.fernando_mariani.TechFixOrg.entity.UsuariosEntity;
 import io.github.fernando_mariani.TechFixOrg.exceptions.AcaoInvalida;
 import io.github.fernando_mariani.TechFixOrg.exceptions.CredenciaisInvalidas;
 import io.github.fernando_mariani.TechFixOrg.exceptions.NaoVerificado;
-import io.github.fernando_mariani.TechFixOrg.mapper.UsuariosMapper;
+
 import io.github.fernando_mariani.TechFixOrg.repository.UsuariosRepository;
 import io.github.fernando_mariani.TechFixOrg.validations.AuthValidation;
 import jakarta.validation.Validation;
 import jakarta.validation.ValidatorFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
-import org.mapstruct.factory.Mappers;
+
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import io.github.fernando_mariani.TechFixOrg.config.JwtConfiguration;
 import java.time.Duration;
@@ -32,7 +32,7 @@ class AuthServiceTest {
     private final JwtConfiguration jwtConfiguration = new JwtConfiguration();
     private final javax.crypto.SecretKey key =
             jwtConfiguration.jwtSecretKey("segredo-de-testes-com-pelo-menos-32-bytes");
-    private final AuthService service = new AuthService(repository, Mappers.getMapper(UsuariosMapper.class),
+    private final AuthService service = new AuthService(repository,
             new AuthValidation(FACTORY.getValidator()), encoder,
             new TokenService(jwtConfiguration.jwtEncoder(key)));
 
@@ -42,20 +42,20 @@ class AuthServiceTest {
     }
 
     @Test
-    void deveAutenticarComSenhaBCryptERetornarDadosDoUsuario() {
+    void deveAutenticarComSenhaBCryptERetornarApenasTokenComClaims() {
         var usuario = usuario();
         when(repository.findByEmailIgnoreCase("MARIA@example.com")).thenReturn(Optional.of(usuario));
 
         var response = service.login(new LoginDTO("MARIA@example.com", "senha-segura"));
-
-        assertEquals(usuario.getId(), response.usuario().id());
-        assertEquals(usuario.getEmail(), response.usuario().email());
-        assertEquals(usuario.getNome(), response.usuario().nome());
-        assertEquals("Bearer", response.tipo());
         var jwt = jwtConfiguration.jwtDecoder(key).decode(response.token());
         assertEquals(usuario.getId().toString(), jwt.getSubject());
-        assertEquals(Duration.ofDays(3), Duration.between(jwt.getIssuedAt(), response.expiraEm()));
-        assertTrue(response.expiraEm().isAfter(Instant.now()));
+        assertEquals(usuario.getId().toString(), jwt.getClaimAsString("id"));
+        assertEquals(usuario.getNome(), jwt.getClaimAsString("nome"));
+        assertEquals(usuario.getEmail(), jwt.getClaimAsString("email"));
+        assertEquals(usuario.getRole().name(), jwt.getClaimAsString("role"));
+        assertEquals(1, response.getClass().getRecordComponents().length);
+        assertEquals(Duration.ofDays(3), Duration.between(jwt.getIssuedAt(), jwt.getExpiresAt()));
+        assertTrue(jwt.getExpiresAt().isAfter(Instant.now()));
         verify(repository).findByEmailIgnoreCase("MARIA@example.com");
     }
 
@@ -79,7 +79,7 @@ class AuthServiceTest {
         usuario.setVerificado(false);
         when(repository.findByEmailIgnoreCase(usuario.getEmail())).thenReturn(Optional.of(usuario));
         var tokens = mock(TokenService.class);
-        var auth = new AuthService(repository, Mappers.getMapper(UsuariosMapper.class),
+        var auth = new AuthService(repository,
                 new AuthValidation(FACTORY.getValidator()), encoder, tokens);
 
         assertThrows(NaoVerificado.class,
@@ -116,3 +116,4 @@ class AuthServiceTest {
         return usuario;
     }
 }
+

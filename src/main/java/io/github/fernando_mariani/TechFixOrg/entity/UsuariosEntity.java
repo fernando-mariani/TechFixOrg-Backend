@@ -1,5 +1,8 @@
 package io.github.fernando_mariani.TechFixOrg.entity;
 
+import io.github.fernando_mariani.TechFixOrg.enums.Role;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -10,7 +13,9 @@ import lombok.Data;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.Generated;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.generator.EventType;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -34,9 +39,10 @@ public class UsuariosEntity {
     @Column(name = "senha", nullable = false, length = 300)
     private String senha;
 
-    @ColumnDefault("'USER'")
-    @Column(name = "role", nullable = false, length = 50)
-    private String role = "USER";
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "role", nullable = false)
+    private Role role = Role.USER;
 
     @ColumnDefault("FALSE")
     @Column(name = "verificado", nullable = false)

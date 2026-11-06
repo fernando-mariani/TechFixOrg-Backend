@@ -3,6 +3,7 @@ package io.github.fernando_mariani.TechFixOrg.service;
 import io.github.fernando_mariani.TechFixOrg.config.SecurityConfiguration;
 import io.github.fernando_mariani.TechFixOrg.dto.UsuariosDTO;
 import io.github.fernando_mariani.TechFixOrg.entity.UsuariosEntity;
+import io.github.fernando_mariani.TechFixOrg.enums.Role;
 import io.github.fernando_mariani.TechFixOrg.exceptions.AcaoInvalida;
 import io.github.fernando_mariani.TechFixOrg.exceptions.RegistroDuplicado;
 import io.github.fernando_mariani.TechFixOrg.mapper.UsuariosMapper;
@@ -41,7 +42,7 @@ class UsuariosServiceTest {
             assertNotEquals(dto.senha(), usuario.getSenha());
             assertTrue(usuario.getSenha().startsWith("$2a$"));
             assertTrue(encoder.matches(dto.senha(), usuario.getSenha()));
-            assertEquals("USER", usuario.getRole());
+            assertEquals(Role.USER, usuario.getRole());
             assertFalse(usuario.getVerificado());
             return usuario;
         });
@@ -50,7 +51,7 @@ class UsuariosServiceTest {
 
         assertEquals(dto.nome(), response.nome());
         assertEquals(dto.email(), response.email());
-        assertEquals("USER", response.role());
+        assertEquals(Role.USER, response.role());
         assertFalse(response.verificado());
         verify(repository).saveAndFlush(any(UsuariosEntity.class));
     }

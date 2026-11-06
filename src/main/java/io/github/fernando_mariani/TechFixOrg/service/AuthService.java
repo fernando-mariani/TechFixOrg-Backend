@@ -3,7 +3,6 @@ package io.github.fernando_mariani.TechFixOrg.service;
 import io.github.fernando_mariani.TechFixOrg.dto.LoginDTO;
 import io.github.fernando_mariani.TechFixOrg.exceptions.CredenciaisInvalidas;
 import io.github.fernando_mariani.TechFixOrg.exceptions.NaoVerificado;
-import io.github.fernando_mariani.TechFixOrg.mapper.UsuariosMapper;
 import io.github.fernando_mariani.TechFixOrg.repository.UsuariosRepository;
 import io.github.fernando_mariani.TechFixOrg.response.LoginResponse;
 import io.github.fernando_mariani.TechFixOrg.validations.AuthValidation;
@@ -18,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthService {
 
     private final UsuariosRepository repository;
-    private final UsuariosMapper mapper;
     private final AuthValidation validation;
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
@@ -36,7 +34,7 @@ public class AuthService {
             throw new NaoVerificado();
         }
 
-        var token = tokenService.gerar(usuario.getId());
-        return new LoginResponse(token.getTokenValue(), "Bearer", token.getExpiresAt(), mapper.toResponse(usuario));
+        var token = tokenService.gerar(usuario);
+        return new LoginResponse(token.getTokenValue());
     }
 }

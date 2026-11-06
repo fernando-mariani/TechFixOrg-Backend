@@ -33,7 +33,7 @@ public class UsuarioDetailsService implements UserDetailsService {
     private UserDetails toUserDetails(UsuariosEntity usuario) {
         return User.withUsername(usuario.getEmail())
                 .password(usuario.getSenha())
-                .roles(usuario.getRole())
+                .authorities(usuario.getRole().name())
                 .build();
     }
 }

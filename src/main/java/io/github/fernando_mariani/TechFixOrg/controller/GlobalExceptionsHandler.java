@@ -59,8 +59,7 @@ public class GlobalExceptionsHandler {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErroResponse> corpoInvalido(HttpMessageNotReadableException exception) {
         return acaoInvalida(new AcaoInvalida(
-                "Corpo da requisição inválido. Envie um JSON válido, use EMAIL, FORMS ou WHATSAPP "
-                        + "para origem e datas no formato yyyy-MM-dd'T'HH:mm:ss."));
+                "Corpo da requisição inválido. Envie um JSON válido."));
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)

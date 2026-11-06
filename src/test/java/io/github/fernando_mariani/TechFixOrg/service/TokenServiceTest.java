@@ -8,6 +8,7 @@ import org.springframework.security.oauth2.jwt.*;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
+import io.github.fernando_mariani.TechFixOrg.entity.UsuariosEntity;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -22,7 +23,7 @@ class TokenServiceTest {
     @Test
     void deveGerarTokenAssinadoComValidadeDeTresDias() {
         UUID id = UUID.randomUUID();
-        var token = new TokenService(encoder).gerar(id);
+        var token = new TokenService(encoder).gerar(usuario(id));
         var validado = decoder.decode(token.getTokenValue());
 
         assertEquals(id.toString(), validado.getSubject());
@@ -43,7 +44,7 @@ class TokenServiceTest {
     @Test
     void deveRejeitarAssinaturaDiferente() {
         var outraChave = configuration.jwtSecretKey("outra-chave-de-testes-com-pelo-menos-32-bytes");
-        var token = new TokenService(configuration.jwtEncoder(outraChave)).gerar(UUID.randomUUID());
+        var token = new TokenService(configuration.jwtEncoder(outraChave)).gerar(usuario(UUID.randomUUID()));
 
         assertThrows(JwtException.class, () -> decoder.decode(token.getTokenValue()));
     }
@@ -82,4 +83,13 @@ class TokenServiceTest {
         return encoder.encode(JwtEncoderParameters.from(
                 JwsHeader.with(MacAlgorithm.HS256).build(), claims)).getTokenValue();
     }
+
+    private UsuariosEntity usuario(UUID id) {
+        var usuario = new UsuariosEntity();
+        usuario.setId(id);
+        usuario.setNome("Maria");
+        usuario.setEmail("maria@example.com");
+        return usuario;
+    }
 }
+
