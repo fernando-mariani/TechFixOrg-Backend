@@ -20,9 +20,11 @@ public class AuthService {
     private final AuthValidation validation;
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
+    private final RateLimitService rateLimitService;
 
-    public LoginResponse login(LoginDTO dto) {
+    public LoginResponse login(LoginDTO dto, String ip) {
         validation.validar(dto);
+        rateLimitService.verificarLogin(dto.email(), ip);
         var usuario = repository.findByEmailIgnoreCase(dto.email())
                 .orElseThrow(CredenciaisInvalidas::new);
 

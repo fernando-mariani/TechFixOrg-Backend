@@ -31,7 +31,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = {PedidosController.class, AdminController.class},
         properties = "security.jwt.secret=segredo-de-testes-com-pelo-menos-32-bytes")
 @Import({SecurityConfiguration.class, JwtConfiguration.class, JwtUserAuthenticationConverter.class,
-        UsuarioDetailsService.class, TokenService.class})
+        UsuarioDetailsService.class, TokenService.class,
+        io.github.fernando_mariani.TechFixOrg.service.RateLimitService.class})
 class JwtSecurityTest {
 
     @Autowired

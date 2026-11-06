@@ -1,5 +1,7 @@
 package io.github.fernando_mariani.TechFixOrg.config;
 
+import io.github.fernando_mariani.TechFixOrg.service.RateLimitService;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,15 +30,20 @@ public class SecurityConfiguration {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtUserAuthenticationConverter converter) {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtUserAuthenticationConverter converter,
+                                                   RateLimitService rateLimitService) {
         return http
                 .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
+                .addFilterBefore(new RateLimitFilter(rateLimitService), UsernamePasswordAuthenticationFilter.class)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/auth/login", "/usuarios").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/admin", "/admin/**").hasAuthority("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/pedidos").hasAnyAuthority("ADMIN", "GERENTE")
+                        .requestMatchers(HttpMethod.PUT, "/pedidos").hasAnyAuthority("ADMIN", "GERENTE")
+                        .requestMatchers(HttpMethod.DELETE, "/pedidos").hasAnyAuthority("ADMIN", "GERENTE")
                         .anyRequest().authenticated())
                 .exceptionHandling(errors -> errors
                         .authenticationEntryPoint(new BearerTokenAuthenticationEntryPoint())

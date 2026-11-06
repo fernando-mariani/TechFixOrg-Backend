@@ -34,7 +34,7 @@ class AuthServiceTest {
             jwtConfiguration.jwtSecretKey("segredo-de-testes-com-pelo-menos-32-bytes");
     private final AuthService service = new AuthService(repository,
             new AuthValidation(FACTORY.getValidator()), encoder,
-            new TokenService(jwtConfiguration.jwtEncoder(key)));
+            new TokenService(jwtConfiguration.jwtEncoder(key)), limiter());
 
     @AfterAll
     static void fecharValidator() {
@@ -46,7 +46,7 @@ class AuthServiceTest {
         var usuario = usuario();
         when(repository.findByEmailIgnoreCase("MARIA@example.com")).thenReturn(Optional.of(usuario));
 
-        var response = service.login(new LoginDTO("MARIA@example.com", "senha-segura"));
+        var response = service.login(new LoginDTO("MARIA@example.com", "senha-segura"), "192.0.2.1");
         var jwt = jwtConfiguration.jwtDecoder(key).decode(response.token());
         assertEquals(usuario.getId().toString(), jwt.getSubject());
         assertEquals(usuario.getId().toString(), jwt.getClaimAsString("id"));
@@ -65,9 +65,9 @@ class AuthServiceTest {
         when(repository.findByEmailIgnoreCase("maria@example.com")).thenReturn(Optional.of(usuario()));
 
         var ausente = assertThrows(CredenciaisInvalidas.class,
-                () -> service.login(new LoginDTO("ausente@example.com", "senha-segura")));
+                () -> service.login(new LoginDTO("ausente@example.com", "senha-segura"), "192.0.2.1"));
         var incorreta = assertThrows(CredenciaisInvalidas.class,
-                () -> service.login(new LoginDTO("maria@example.com", "senha-incorreta")));
+                () -> service.login(new LoginDTO("maria@example.com", "senha-incorreta"), "192.0.2.1"));
 
         assertEquals("E-mail ou senha inválidos.", ausente.getMessage());
         assertEquals(ausente.getMessage(), incorreta.getMessage());
@@ -80,10 +80,10 @@ class AuthServiceTest {
         when(repository.findByEmailIgnoreCase(usuario.getEmail())).thenReturn(Optional.of(usuario));
         var tokens = mock(TokenService.class);
         var auth = new AuthService(repository,
-                new AuthValidation(FACTORY.getValidator()), encoder, tokens);
+                new AuthValidation(FACTORY.getValidator()), encoder, tokens, limiter());
 
         assertThrows(NaoVerificado.class,
-                () -> auth.login(new LoginDTO(usuario.getEmail(), "senha-segura")));
+                () -> auth.login(new LoginDTO(usuario.getEmail(), "senha-segura"), "192.0.2.1"));
         verifyNoInteractions(tokens);
     }
 
@@ -94,15 +94,15 @@ class AuthServiceTest {
         when(repository.findByEmailIgnoreCase(usuario.getEmail())).thenReturn(Optional.of(usuario));
 
         assertThrows(CredenciaisInvalidas.class,
-                () -> service.login(new LoginDTO(usuario.getEmail(), "senha-incorreta")));
+                () -> service.login(new LoginDTO(usuario.getEmail(), "senha-incorreta"), "192.0.2.1"));
     }
 
     @Test
     void deveRejeitarDadosInvalidosAntesDeBuscarUsuario() {
-        assertThrows(AcaoInvalida.class, () -> service.login(null));
-        assertThrows(AcaoInvalida.class, () -> service.login(new LoginDTO("invalido", " ")));
+        assertThrows(AcaoInvalida.class, () -> service.login(null, "192.0.2.1"));
+        assertThrows(AcaoInvalida.class, () -> service.login(new LoginDTO("invalido", " "), "192.0.2.1"));
         assertThrows(AcaoInvalida.class,
-                () -> service.login(new LoginDTO("maria@example.com", "á".repeat(37))));
+                () -> service.login(new LoginDTO("maria@example.com", "á".repeat(37)), "192.0.2.1"));
         verifyNoInteractions(repository);
     }
 
@@ -115,5 +115,27 @@ class AuthServiceTest {
         usuario.setVerificado(true);
         return usuario;
     }
-}
 
+    private RateLimitService limiter() {
+        return new RateLimitService(600, Duration.ofMinutes(1), 5, Duration.ofMinutes(15), 100);
+    }
+
+    @Test
+    void deveBloquearSextaTentativaAntesDeConsultarBancoOuGerarToken() {
+        var tokens = mock(TokenService.class);
+        var auth = new AuthService(repository, new AuthValidation(FACTORY.getValidator()),
+                encoder, tokens, limiter());
+        when(repository.findByEmailIgnoreCase("ausente@example.com")).thenReturn(Optional.empty());
+        for (int i = 0; i < 5; i++) {
+            assertThrows(CredenciaisInvalidas.class,
+                    () -> auth.login(new LoginDTO("ausente@example.com", "senha-segura"), "192.0.2.1"));
+        }
+        assertThrows(io.github.fernando_mariani.TechFixOrg.exceptions.LimiteRequisicoes.class,
+                () -> auth.login(new LoginDTO("AUSENTE@example.com", "senha-segura"), "192.0.2.1"));
+        verify(repository, times(5)).findByEmailIgnoreCase(anyString());
+        assertThrows(CredenciaisInvalidas.class,
+                () -> auth.login(new LoginDTO("ausente@example.com", "senha-segura"), "192.0.2.2"));
+        verify(repository, times(6)).findByEmailIgnoreCase(anyString());
+        verifyNoInteractions(tokens);
+    }
+}

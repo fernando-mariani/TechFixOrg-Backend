@@ -21,6 +21,14 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionsHandler {
 
+    @ExceptionHandler(io.github.fernando_mariani.TechFixOrg.exceptions.LimiteRequisicoes.class)
+    public ResponseEntity<ErroResponse> limiteRequisicoes(
+            io.github.fernando_mariani.TechFixOrg.exceptions.LimiteRequisicoes exception) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header("Retry-After", Long.toString(exception.getRetryAfter()))
+                .body(new ErroResponse(429, exception.getMessage()));
+    }
+
     @ExceptionHandler(NaoVerificado.class)
     public ResponseEntity<ErroResponse> naoVerificado(NaoVerificado exception) {
         return responder(HttpStatus.FORBIDDEN, exception.getMessage());

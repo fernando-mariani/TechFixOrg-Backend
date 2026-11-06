@@ -4,6 +4,7 @@ import io.github.fernando_mariani.TechFixOrg.dto.LoginDTO;
 import io.github.fernando_mariani.TechFixOrg.response.LoginResponse;
 import io.github.fernando_mariani.TechFixOrg.service.AuthService;
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,7 +20,7 @@ public class AuthController {
     private final AuthService service;
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginDTO dto) {
-        return ResponseEntity.ok(service.login(dto));
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginDTO dto, HttpServletRequest request) {
+        return ResponseEntity.ok(service.login(dto, request.getRemoteAddr()));
     }
 }
