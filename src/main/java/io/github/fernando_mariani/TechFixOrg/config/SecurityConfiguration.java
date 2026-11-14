@@ -38,6 +38,7 @@ public class SecurityConfiguration {
                         .ignoringRequestMatchers(
                                 "/integracoes/forms"
                         )
+                        .disable()
                 )
                 .addFilterBefore(new RateLimitFilter(rateLimitService), UsernamePasswordAuthenticationFilter.class)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
