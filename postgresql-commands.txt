@@ -32,3 +32,23 @@ USING role::text::role;
 
 ALTER TABLE usuarios
 ALTER COLUMN role SET DEFAULT 'USER'::role;
+
+ALTER TABLE pedidos
+ADD COLUMN nome_cliente varchar(100) NOT NULL;
+
+ALTER TABLE pedidos
+ADD COLUMN email_cliente varchar(200) NOT NULL;
+
+ALTER TABLE pedidos
+ADD COLUMN data_limite date NOT NULL;
+
+ALTER TABLE pedidos
+ADD COLUMN preco decimal(10, 2);
+
+ALTER TABLE pedidos
+ALTER COLUMN data_marcada DROP NOT NULL;
+
+CREATE TYPE categoria as ENUM('HARDWARE', 'SOFTWARE', 'REDE', 'OUTROS');
+
+ALTER TABLE pedidos
+ADD COLUMN categoria categoria NOT NULL;

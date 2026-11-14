@@ -16,6 +16,8 @@ import org.hibernate.generator.EventType;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -49,10 +51,34 @@ public class PedidosEntity {
     @Column(name = "data_marcada")
     private LocalDateTime dataMarcada;
 
+    @Column(name = "nome_cliente", nullable = false, length = 100)
+    private String nomeCliente;
+
+    @Column(name = "email_cliente", nullable = false, length = 200)
+    private String emailCliente;
+
+    @Column(name = "data_limite", nullable = false)
+    private LocalDate dataLimite;
+
+    @Column(name = "preco", precision = 10, scale = 2)
+    private BigDecimal preco;
+
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "categoria", nullable = false, columnDefinition = "categoria")
+    private Categoria categoria;
+
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Generated(event = EventType.INSERT)
     @Column(name = "data_criacao")
     private LocalDateTime dataCriacao;
+
+    public enum Categoria {
+        HARDWARE,
+        SOFTWARE,
+        REDE,
+        OUTROS
+    }
 
     public enum Origem {
         EMAIL,

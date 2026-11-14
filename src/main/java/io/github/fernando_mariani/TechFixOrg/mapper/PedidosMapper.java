@@ -13,7 +13,6 @@ public interface PedidosMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "dataCriacao", ignore = true)
-    @Mapping(target = "tecnico", ignore = true)
     PedidosEntity toEntity(PedidosDTO dto);
 
     PedidosResponse toResponse(PedidosEntity entity);

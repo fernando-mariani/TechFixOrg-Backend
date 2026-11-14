@@ -2,6 +2,7 @@ package io.github.fernando_mariani.TechFixOrg.validations;
 
 import io.github.fernando_mariani.TechFixOrg.dto.PedidosDTO;
 import io.github.fernando_mariani.TechFixOrg.entity.PedidosEntity.Origem;
+import io.github.fernando_mariani.TechFixOrg.entity.PedidosEntity.Categoria;
 import io.github.fernando_mariani.TechFixOrg.exceptions.AcaoInvalida;
 import io.github.fernando_mariani.TechFixOrg.exceptions.RegistroDuplicado;
 import io.github.fernando_mariani.TechFixOrg.repository.PedidosRepository;
@@ -11,6 +12,9 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -33,20 +37,25 @@ class PedidosValidationTest {
 
     @Test
     void deveRejeitarDadosObrigatoriosAntesDeConsultarRepositorio() {
-        var dto = new PedidosDTO(" ", null, null, null, null, null);
+        var dto = new PedidosDTO(" ", null, null, null, null, null, null, null, null, null, null);
 
         AcaoInvalida erro = assertThrows(AcaoInvalida.class, () -> validation.validar(dto, null));
 
         assertTrue(erro.getMessage().contains("O título é obrigatório."));
         assertTrue(erro.getMessage().contains("A descrição é obrigatória."));
         assertTrue(erro.getMessage().contains("A origem é obrigatória."));
+        assertTrue(erro.getMessage().contains("O nome do cliente é obrigatório."));
+        assertTrue(erro.getMessage().contains("O e-mail do cliente é obrigatório."));
+        assertTrue(erro.getMessage().contains("A data limite é obrigatória."));
+        assertTrue(erro.getMessage().contains("A categoria é obrigatória."));
         verifyNoInteractions(repository);
     }
 
     @Test
     void deveRejeitarCamposQueExcedemLimitesDaTabela() {
         var dto = new PedidosDTO("a".repeat(101), "a".repeat(301), "a".repeat(301),
-                Origem.EMAIL, "a".repeat(101), null);
+                Origem.EMAIL, "a".repeat(101), null, "a".repeat(101),
+                "a".repeat(190) + "@example.com", LocalDate.now().plusDays(2), null, Categoria.HARDWARE);
 
         AcaoInvalida erro = assertThrows(AcaoInvalida.class, () -> validation.validar(dto, null));
 
@@ -54,6 +63,8 @@ class PedidosValidationTest {
         assertTrue(erro.getMessage().contains("A descrição deve ter no máximo 300 caracteres."));
         assertTrue(erro.getMessage().contains("A imagem deve ter no máximo 300 caracteres."));
         assertTrue(erro.getMessage().contains("O técnico deve ter no máximo 100 caracteres."));
+        assertTrue(erro.getMessage().contains("O nome do cliente deve ter no máximo 100 caracteres."));
+        assertTrue(erro.getMessage().contains("O e-mail do cliente deve ter no máximo 200 caracteres."));
         verifyNoInteractions(repository);
     }
 
@@ -92,6 +103,37 @@ class PedidosValidationTest {
     }
 
     private PedidosDTO pedidoValido() {
-        return new PedidosDTO("Reparo", "Computador não liga", null, Origem.EMAIL, null, null);
+        return new PedidosDTO("Reparo", "Computador não liga", null, Origem.EMAIL, null, null,
+                "Maria", "maria@example.com", LocalDate.now().plusDays(2), null, Categoria.HARDWARE);
+    }
+
+    @Test
+    void deveRejeitarEmailInvalido() {
+        var dto = new PedidosDTO("Reparo", "Computador não liga", null, Origem.EMAIL, null, null,
+                "Maria", "email-invalido", LocalDate.now().plusDays(2), null, Categoria.HARDWARE);
+
+        assertThrows(AcaoInvalida.class, () -> validation.validar(dto, null));
+        verifyNoInteractions(repository);
+    }
+
+    @Test
+    void deveRejeitarPrecoNegativoOuForaDaPrecisao() {
+        for (String preco : new String[]{"-0.01", "100000000.00", "1.001"}) {
+            var dto = new PedidosDTO("Reparo", "Computador não liga", null, Origem.EMAIL, null, null,
+                    "Maria", "maria@example.com", LocalDate.now().plusDays(2), new BigDecimal(preco),
+                    Categoria.HARDWARE);
+
+            assertThrows(AcaoInvalida.class, () -> validation.validar(dto, null));
+        }
+        verifyNoInteractions(repository);
+    }
+
+    @Test
+    void devePermitirAgendamentoFuturoComPrecoETecnico() {
+        var dto = new PedidosDTO("Reparo", "Computador não liga", null, Origem.EMAIL, "João",
+                LocalDateTime.now().plusDays(1), "Maria", "maria@example.com",
+                LocalDate.now().plusDays(2), new BigDecimal("99999999.99"), Categoria.HARDWARE);
+
+        assertDoesNotThrow(() -> validation.validar(dto, null));
     }
 }
