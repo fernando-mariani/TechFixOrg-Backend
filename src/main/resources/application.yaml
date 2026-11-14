@@ -25,3 +25,6 @@ security:
   jwt:
     # Chave de assinatura HS256: configure um segredo aleatório com pelo menos 32 bytes.
     secret: ${JWT_SECRET}
+integrations:
+  google-forms:
+    api-key:  ${FORMS_API_KEY}

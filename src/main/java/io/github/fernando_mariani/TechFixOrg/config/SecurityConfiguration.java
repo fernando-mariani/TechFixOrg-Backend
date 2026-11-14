@@ -34,11 +34,16 @@ public class SecurityConfiguration {
                                                    RateLimitService rateLimitService) {
         return http
                 .cors(Customizer.withDefaults())
-                .csrf(AbstractHttpConfigurer::disable)
+                .csrf(csrf -> csrf
+                        .ignoringRequestMatchers(
+                                "/integracoes/forms"
+                        )
+                )
                 .addFilterBefore(new RateLimitFilter(rateLimitService), UsernamePasswordAuthenticationFilter.class)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/auth/login", "/usuarios").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/integracoes/forms").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/admin", "/admin/**").hasAuthority("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/pedidos").hasAnyAuthority("ADMIN", "GERENTE")
