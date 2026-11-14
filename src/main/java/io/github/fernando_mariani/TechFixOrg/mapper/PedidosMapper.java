@@ -1,6 +1,7 @@
 package io.github.fernando_mariani.TechFixOrg.mapper;
 
-import io.github.fernando_mariani.TechFixOrg.dto.PedidosDTO;
+import io.github.fernando_mariani.TechFixOrg.dto.CriarPedidoDTO;
+import io.github.fernando_mariani.TechFixOrg.dto.AtualizarPedidoDTO;
 import io.github.fernando_mariani.TechFixOrg.entity.PedidosEntity;
 import io.github.fernando_mariani.TechFixOrg.response.PedidosResponse;
 import org.mapstruct.Mapper;
@@ -13,11 +14,15 @@ public interface PedidosMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "dataCriacao", ignore = true)
-    PedidosEntity toEntity(PedidosDTO dto);
+    @Mapping(target = "imagem", ignore = true)
+    @Mapping(target = "tecnico", ignore = true)
+    @Mapping(target = "dataMarcada", ignore = true)
+    @Mapping(target = "preco", ignore = true)
+    PedidosEntity toEntity(CriarPedidoDTO dto);
 
     PedidosResponse toResponse(PedidosEntity entity);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "dataCriacao", ignore = true)
-    void atualizarEntity(PedidosDTO dto, @MappingTarget PedidosEntity entity);
+    void atualizarEntity(AtualizarPedidoDTO dto, @MappingTarget PedidosEntity entity);
 }

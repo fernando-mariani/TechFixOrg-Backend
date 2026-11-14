@@ -1,6 +1,7 @@
 package io.github.fernando_mariani.TechFixOrg.service;
 
-import io.github.fernando_mariani.TechFixOrg.dto.PedidosDTO;
+import io.github.fernando_mariani.TechFixOrg.dto.CriarPedidoDTO;
+import io.github.fernando_mariani.TechFixOrg.dto.AtualizarPedidoDTO;
 import io.github.fernando_mariani.TechFixOrg.entity.PedidosEntity;
 import io.github.fernando_mariani.TechFixOrg.exceptions.NaoEncontrado;
 import io.github.fernando_mariani.TechFixOrg.mapper.PedidosMapper;
@@ -24,7 +25,7 @@ public class PedidosService {
     private final PedidosValidation validation;
 
     @Transactional
-    public PedidosResponse criar(PedidosDTO dto) {
+    public PedidosResponse criar(CriarPedidoDTO dto) {
         validation.validar(dto, null);
         PedidosEntity pedido = mapper.toEntity(dto);
         return mapper.toResponse(repository.saveAndFlush(pedido));
@@ -41,7 +42,7 @@ public class PedidosService {
     }
 
     @Transactional
-    public PedidosResponse atualizar(UUID id, PedidosDTO dto) {
+    public PedidosResponse atualizar(UUID id, AtualizarPedidoDTO dto) {
         PedidosEntity pedido = buscarPedido(id);
         validation.validar(dto, id);
         mapper.atualizarEntity(dto, pedido);

@@ -1,6 +1,7 @@
 package io.github.fernando_mariani.TechFixOrg.validations;
 
-import io.github.fernando_mariani.TechFixOrg.dto.PedidosDTO;
+import io.github.fernando_mariani.TechFixOrg.dto.CriarPedidoDTO;
+import io.github.fernando_mariani.TechFixOrg.dto.AtualizarPedidoDTO;
 import io.github.fernando_mariani.TechFixOrg.exceptions.AcaoInvalida;
 import io.github.fernando_mariani.TechFixOrg.exceptions.RegistroDuplicado;
 import io.github.fernando_mariani.TechFixOrg.repository.PedidosRepository;
@@ -19,8 +20,18 @@ public class PedidosValidation {
     private final PedidosRepository repository;
     private final Validator validator;
 
-    // Na criação, o ID é nulo. Na atualização, o próprio pedido é excluído da busca.
-    public void validar(PedidosDTO dto, UUID id) {
+
+    public void validar(CriarPedidoDTO dto, UUID id) {
+        validarDados(dto);
+        validarDuplicidade(dto.titulo(), dto.descricao(), id);
+    }
+
+    public void validar(AtualizarPedidoDTO dto, UUID id) {
+        validarDados(dto);
+        validarDuplicidade(dto.titulo(), dto.descricao(), id);
+    }
+
+    private void validarDados(Object dto) {
         if (dto == null) {
             throw new AcaoInvalida("Os dados do pedido são obrigatórios.");
         }
@@ -35,9 +46,12 @@ public class PedidosValidation {
             throw new AcaoInvalida(mensagem);
         }
 
+    }
+
+    private void validarDuplicidade(String titulo, String descricao, UUID id) {
         boolean duplicado = id == null
-                ? repository.existsByTituloIgnoreCaseAndDescricaoIgnoreCase(dto.titulo(), dto.descricao())
-                : repository.existsByTituloIgnoreCaseAndDescricaoIgnoreCaseAndIdNot(dto.titulo(), dto.descricao(), id);
+                ? repository.existsByTituloIgnoreCaseAndDescricaoIgnoreCase(titulo, descricao)
+                : repository.existsByTituloIgnoreCaseAndDescricaoIgnoreCaseAndIdNot(titulo, descricao, id);
 
         if (duplicado) {
             throw new RegistroDuplicado("Já existe um pedido com o mesmo título e descrição.");

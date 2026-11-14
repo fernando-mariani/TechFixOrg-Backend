@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-public record PedidosDTO(
+public record AtualizarPedidoDTO(
         @NotBlank(message = "O título é obrigatório.")
         @Size(max = 100, message = "O título deve ter no máximo 100 caracteres.")
         String titulo,

@@ -1,6 +1,7 @@
 package io.github.fernando_mariani.TechFixOrg.mapper;
 
-import io.github.fernando_mariani.TechFixOrg.dto.PedidosDTO;
+import io.github.fernando_mariani.TechFixOrg.dto.AtualizarPedidoDTO;
+import io.github.fernando_mariani.TechFixOrg.dto.CriarPedidoDTO;
 import io.github.fernando_mariani.TechFixOrg.entity.PedidosEntity;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
@@ -17,10 +18,11 @@ class PedidosMapperTest {
     private final PedidosMapper mapper = Mappers.getMapper(PedidosMapper.class);
 
     @Test
-    void devePreservarCamposNoCadastroENaResposta() {
+    void devePreservarCamposNaEdicaoENaResposta() {
         var dto = pedido("João", LocalDateTime.of(2027, 1, 10, 14, 30), new BigDecimal("150.50"));
 
-        var entity = mapper.toEntity(dto);
+        var entity = new PedidosEntity();
+        mapper.atualizarEntity(dto, entity);
         var response = mapper.toResponse(entity);
 
         assertEquals(dto.tecnico(), response.tecnico());
@@ -34,8 +36,11 @@ class PedidosMapperTest {
 
     @Test
     void deveAceitarCadastroSemCamposOpcionais() {
-        var entity = mapper.toEntity(pedido(null, null, null));
+        var entity = mapper.toEntity(new CriarPedidoDTO("Reparo", "Computador não liga", PedidosEntity.Origem.EMAIL, "Maria", "maria@example.com", LocalDate.of(2027, 1, 11), PedidosEntity.Categoria.HARDWARE));
 
+        assertNull(entity.getImagem());
+        assertEquals("Maria", entity.getNomeCliente());
+        assertEquals(LocalDate.of(2027, 1, 11), entity.getDataLimite());
         assertNull(entity.getTecnico());
         assertNull(entity.getDataMarcada());
         assertNull(entity.getPreco());
@@ -63,8 +68,8 @@ class PedidosMapperTest {
         assertEquals(dto.preco(), entity.getPreco());
     }
 
-    private PedidosDTO pedido(String tecnico, LocalDateTime dataMarcada, BigDecimal preco) {
-        return new PedidosDTO("Reparo", "Computador não liga", null, PedidosEntity.Origem.EMAIL,
+    private AtualizarPedidoDTO pedido(String tecnico, LocalDateTime dataMarcada, BigDecimal preco) {
+        return new AtualizarPedidoDTO("Reparo", "Computador não liga", null, PedidosEntity.Origem.EMAIL,
                 tecnico, dataMarcada, "Maria", "maria@example.com",
                 LocalDate.of(2027, 1, 11), preco, PedidosEntity.Categoria.HARDWARE);
     }

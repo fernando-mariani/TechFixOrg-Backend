@@ -1,6 +1,7 @@
 package io.github.fernando_mariani.TechFixOrg.controller;
 
-import io.github.fernando_mariani.TechFixOrg.dto.PedidosDTO;
+import io.github.fernando_mariani.TechFixOrg.dto.CriarPedidoDTO;
+import io.github.fernando_mariani.TechFixOrg.dto.AtualizarPedidoDTO;
 import io.github.fernando_mariani.TechFixOrg.response.PedidosResponse;
 import io.github.fernando_mariani.TechFixOrg.service.PedidosService;
 import jakarta.validation.Valid;
@@ -28,7 +29,7 @@ public class PedidosController {
     private final PedidosService service;
 
     @PostMapping
-    public ResponseEntity<PedidosResponse> criar(@Valid @RequestBody PedidosDTO dto) {
+    public ResponseEntity<PedidosResponse> criar(@Valid @RequestBody CriarPedidoDTO dto) {
         PedidosResponse response = service.criar(dto);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
@@ -48,7 +49,7 @@ public class PedidosController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<PedidosResponse> atualizar(@PathVariable UUID id, @Valid @RequestBody PedidosDTO dto) {
+    public ResponseEntity<PedidosResponse> atualizar(@PathVariable UUID id, @Valid @RequestBody AtualizarPedidoDTO dto) {
         return ResponseEntity.ok(service.atualizar(id, dto));
     }
 

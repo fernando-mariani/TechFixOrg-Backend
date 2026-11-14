@@ -1,6 +1,7 @@
 package io.github.fernando_mariani.TechFixOrg.validations;
 
-import io.github.fernando_mariani.TechFixOrg.dto.PedidosDTO;
+import io.github.fernando_mariani.TechFixOrg.dto.AtualizarPedidoDTO;
+import io.github.fernando_mariani.TechFixOrg.dto.CriarPedidoDTO;
 import io.github.fernando_mariani.TechFixOrg.entity.PedidosEntity.Origem;
 import io.github.fernando_mariani.TechFixOrg.entity.PedidosEntity.Categoria;
 import io.github.fernando_mariani.TechFixOrg.exceptions.AcaoInvalida;
@@ -37,7 +38,7 @@ class PedidosValidationTest {
 
     @Test
     void deveRejeitarDadosObrigatoriosAntesDeConsultarRepositorio() {
-        var dto = new PedidosDTO(" ", null, null, null, null, null, null, null, null, null, null);
+        var dto = new CriarPedidoDTO(" ", null, null, null, null, null, null);
 
         AcaoInvalida erro = assertThrows(AcaoInvalida.class, () -> validation.validar(dto, null));
 
@@ -53,7 +54,7 @@ class PedidosValidationTest {
 
     @Test
     void deveRejeitarCamposQueExcedemLimitesDaTabela() {
-        var dto = new PedidosDTO("a".repeat(101), "a".repeat(301), "a".repeat(301),
+        var dto = new AtualizarPedidoDTO("a".repeat(101), "a".repeat(301), "a".repeat(301),
                 Origem.EMAIL, "a".repeat(101), null, "a".repeat(101),
                 "a".repeat(190) + "@example.com", LocalDate.now().plusDays(2), null, Categoria.HARDWARE);
 
@@ -70,7 +71,7 @@ class PedidosValidationTest {
 
     @Test
     void deveRejeitarCriacaoDuplicada() {
-        var dto = pedidoValido();
+        var dto = new CriarPedidoDTO("Reparo", "Computador não liga", Origem.EMAIL, "Maria", "maria@example.com", LocalDate.now().plusDays(2), Categoria.HARDWARE);
         when(repository.existsByTituloIgnoreCaseAndDescricaoIgnoreCase(dto.titulo(), dto.descricao()))
                 .thenReturn(true);
 
@@ -99,17 +100,17 @@ class PedidosValidationTest {
 
     @Test
     void devePermitirCriacaoComCamposOpcionaisNulos() {
-        assertDoesNotThrow(() -> validation.validar(pedidoValido(), null));
+        assertDoesNotThrow(() -> validation.validar(new CriarPedidoDTO("Reparo", "Computador não liga", Origem.EMAIL, "Maria", "maria@example.com", LocalDate.now().plusDays(2), Categoria.HARDWARE), null));
     }
 
-    private PedidosDTO pedidoValido() {
-        return new PedidosDTO("Reparo", "Computador não liga", null, Origem.EMAIL, null, null,
+    private AtualizarPedidoDTO pedidoValido() {
+        return new AtualizarPedidoDTO("Reparo", "Computador não liga", null, Origem.EMAIL, null, null,
                 "Maria", "maria@example.com", LocalDate.now().plusDays(2), null, Categoria.HARDWARE);
     }
 
     @Test
     void deveRejeitarEmailInvalido() {
-        var dto = new PedidosDTO("Reparo", "Computador não liga", null, Origem.EMAIL, null, null,
+        var dto = new AtualizarPedidoDTO("Reparo", "Computador não liga", null, Origem.EMAIL, null, null,
                 "Maria", "email-invalido", LocalDate.now().plusDays(2), null, Categoria.HARDWARE);
 
         assertThrows(AcaoInvalida.class, () -> validation.validar(dto, null));
@@ -119,7 +120,7 @@ class PedidosValidationTest {
     @Test
     void deveRejeitarPrecoNegativoOuForaDaPrecisao() {
         for (String preco : new String[]{"-0.01", "100000000.00", "1.001"}) {
-            var dto = new PedidosDTO("Reparo", "Computador não liga", null, Origem.EMAIL, null, null,
+            var dto = new AtualizarPedidoDTO("Reparo", "Computador não liga", null, Origem.EMAIL, null, null,
                     "Maria", "maria@example.com", LocalDate.now().plusDays(2), new BigDecimal(preco),
                     Categoria.HARDWARE);
 
@@ -130,7 +131,7 @@ class PedidosValidationTest {
 
     @Test
     void devePermitirAgendamentoFuturoComPrecoETecnico() {
-        var dto = new PedidosDTO("Reparo", "Computador não liga", null, Origem.EMAIL, "João",
+        var dto = new AtualizarPedidoDTO("Reparo", "Computador não liga", null, Origem.EMAIL, "João",
                 LocalDateTime.now().plusDays(1), "Maria", "maria@example.com",
                 LocalDate.now().plusDays(2), new BigDecimal("99999999.99"), Categoria.HARDWARE);
 
