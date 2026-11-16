@@ -8,7 +8,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-import java.time.LocalDate;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record CriarPedidoDTO(
@@ -27,8 +26,6 @@ public record CriarPedidoDTO(
         @Email(message = "O e-mail do cliente deve ser válido.")
         @Size(max = 200, message = "O e-mail do cliente deve ter no máximo 200 caracteres.")
         String emailCliente,
-        @NotNull(message = "A data limite é obrigatória.")
-        LocalDate dataLimite,
         @NotNull(message = "A categoria é obrigatória.")
         Categoria categoria
 ) {

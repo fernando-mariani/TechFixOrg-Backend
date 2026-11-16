@@ -14,9 +14,9 @@ public interface PedidosMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "dataCriacao", ignore = true)
+    @Mapping(target = "status", ignore = true)
     @Mapping(target = "imagem", ignore = true)
     @Mapping(target = "tecnico", ignore = true)
-    @Mapping(target = "dataMarcada", ignore = true)
     @Mapping(target = "preco", ignore = true)
     PedidosEntity toEntity(CriarPedidoDTO dto);
 
@@ -24,5 +24,6 @@ public interface PedidosMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "dataCriacao", ignore = true)
+    @Mapping(target = "status", ignore = true)
     void atualizarEntity(AtualizarPedidoDTO dto, @MappingTarget PedidosEntity entity);
 }

@@ -7,11 +7,16 @@ import io.github.fernando_mariani.TechFixOrg.repository.PedidosRepository;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.mail.MailSendException;
-import org.springframework.mail.SimpleMailMessage;
+import jakarta.mail.Session;
+import jakarta.mail.Multipart;
+import jakarta.mail.Part;
+import jakarta.mail.internet.MimeMessage;
+import io.github.fernando_mariani.TechFixOrg.entity.ConfirmacaoPedidoEntity;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.mail.javamail.JavaMailSender;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.util.Properties;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -22,27 +27,41 @@ class EmailServiceTest {
 
     private final JavaMailSender mailSender = mock(JavaMailSender.class);
     private final PedidosRepository repository = mock(PedidosRepository.class);
-    private final EmailService service = new EmailService(mailSender, repository, "techfix@example.com");
+    private final ConfirmacaoPedidoService confirmacaoService = mock(ConfirmacaoPedidoService.class);
+    private final EmailService service = new EmailService(mailSender, repository, "techfix@example.com",
+            confirmacaoService, "https://api.example.com/");
+
+    @BeforeEach
+    void configurarMensagem() {
+        when(mailSender.createMimeMessage()).thenAnswer(invocation -> new MimeMessage(Session.getInstance(new Properties())));
+        var confirmacao = new ConfirmacaoPedidoEntity();
+        confirmacao.setTokenHash("a".repeat(64));
+        when(confirmacaoService.criar(any())).thenReturn(confirmacao);
+    }
 
     @Test
-    void deveEnviarDetalhesAoClienteComPrecoEDataFormatados() {
+    void deveEnviarDetalhesAoClienteComPrecoFormatado() throws Exception {
         var pedido = pedido();
         when(repository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
 
         service.enviarDetalhesPedido(pedido.getId());
 
-        var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+        var captor = ArgumentCaptor.forClass(MimeMessage.class);
         verify(mailSender).send(captor.capture());
         var mensagem = captor.getValue();
-        assertEquals("techfix@example.com", mensagem.getFrom());
-        assertArrayEquals(new String[]{"maria@example.com"}, mensagem.getTo());
+        assertEquals("techfix@example.com", mensagem.getFrom()[0].toString());
+        assertEquals("maria@example.com", mensagem.getAllRecipients()[0].toString());
         assertTrue(mensagem.getSubject().contains(pedido.getId().toString()));
-        assertTrue(mensagem.getText().contains("Olá, Maria!"));
-        assertTrue(mensagem.getText().contains("Computador não liga"));
-        assertTrue(mensagem.getText().contains("Técnico responsável: João"));
-        assertTrue(mensagem.getText().contains("R$"));
-        assertTrue(mensagem.getText().contains("150,50"));
-        assertTrue(mensagem.getText().contains("10/01/2027 às 14:30"));
+        assertTrue(conteudo(mensagem).contains("Olá, Maria!"));
+        assertTrue(conteudo(mensagem).contains("Computador não liga"));
+        assertTrue(conteudo(mensagem).contains("Técnico responsável: João"));
+        assertTrue(conteudo(mensagem).contains("R$"));
+        assertTrue(conteudo(mensagem).contains("150,50"));
+        String corpo = conteudo(mensagem);
+        assertTrue(corpo.contains("Confirme seu pedido aqui!"));
+        assertTrue(corpo.contains("href=\"https://api.example.com/confirmacao-pedido/confirmar?token="
+                + "a".repeat(64) + "&amp;pedidoId=" + pedido.getId() + "\""));
+        verify(confirmacaoService).criar(pedido.getId());
     }
 
     @Test
@@ -55,13 +74,12 @@ class EmailServiceTest {
 
     @Test
     void deveRejeitarAgendamentoIncompleto() {
-        for (String campo : new String[]{"tecnico", "tecnicoEmBranco", "preco", "dataMarcada", "email"}) {
+        for (String campo : new String[]{"tecnico", "tecnicoEmBranco", "preco", "email"}) {
             var pedido = pedido();
             switch (campo) {
                 case "tecnico" -> pedido.setTecnico(null);
                 case "tecnicoEmBranco" -> pedido.setTecnico(" ");
                 case "preco" -> pedido.setPreco(null);
-                case "dataMarcada" -> pedido.setDataMarcada(null);
                 case "email" -> pedido.setEmailCliente(" ");
             }
             when(repository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
@@ -74,8 +92,22 @@ class EmailServiceTest {
     void devePropagarFalhaNoEnvio() {
         var pedido = pedido();
         when(repository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
-        doThrow(new MailSendException("SMTP indisponível")).when(mailSender).send(any(SimpleMailMessage.class));
+        doThrow(new MailSendException("SMTP indisponível")).when(mailSender).send(any(MimeMessage.class));
         assertThrows(MailSendException.class, () -> service.enviarDetalhesPedido(pedido.getId()));
+    }
+
+    private String conteudo(Part parte) throws Exception {
+        if (parte.isMimeType("text/*")) {
+            return (String) parte.getContent();
+        }
+        if (parte.getContent() instanceof Multipart multipart) {
+            var texto = new StringBuilder();
+            for (int i = 0; i < multipart.getCount(); i++) {
+                texto.append(conteudo(multipart.getBodyPart(i)));
+            }
+            return texto.toString();
+        }
+        return "";
     }
 
     private PedidosEntity pedido() {
@@ -87,7 +119,6 @@ class EmailServiceTest {
         pedido.setDescricao("Computador não liga");
         pedido.setTecnico("João");
         pedido.setPreco(new BigDecimal("150.50"));
-        pedido.setDataMarcada(LocalDateTime.of(2027, 1, 10, 14, 30));
         return pedido;
     }
 }

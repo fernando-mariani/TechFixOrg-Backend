@@ -45,3 +45,6 @@ security:
 integrations:
   google-forms:
     api-key:  ${FORMS_API_KEY}
+
+api:
+  url: ${URL_API_BASE}

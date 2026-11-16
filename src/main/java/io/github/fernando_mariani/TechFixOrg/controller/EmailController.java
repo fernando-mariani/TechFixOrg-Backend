@@ -1,5 +1,6 @@
 package io.github.fernando_mariani.TechFixOrg.controller;
 
+import io.github.fernando_mariani.TechFixOrg.service.ConfirmacaoPedidoService;
 import io.github.fernando_mariani.TechFixOrg.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

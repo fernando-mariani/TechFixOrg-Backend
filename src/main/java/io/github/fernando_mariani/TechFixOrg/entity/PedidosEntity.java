@@ -17,7 +17,6 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -48,17 +47,11 @@ public class PedidosEntity {
     @Column(name = "tecnico", length = 100)
     private String tecnico;
 
-    @Column(name = "data_marcada")
-    private LocalDateTime dataMarcada;
-
     @Column(name = "nome_cliente", nullable = false, length = 100)
     private String nomeCliente;
 
     @Column(name = "email_cliente", nullable = false, length = 200)
     private String emailCliente;
-
-    @Column(name = "data_limite", nullable = false)
-    private LocalDate dataLimite;
 
     @Column(name = "preco", precision = 10, scale = 2)
     private BigDecimal preco;
@@ -68,10 +61,23 @@ public class PedidosEntity {
     @Column(name = "categoria", nullable = false, columnDefinition = "categoria")
     private Categoria categoria;
 
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @ColumnDefault("'AGUARDANDO_VERIFICACAO'")
+    @Column(name = "status", columnDefinition = "status")
+    private Status status = Status.AGUARDANDO_VERIFICACAO;
+
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Generated(event = EventType.INSERT)
     @Column(name = "data_criacao")
     private LocalDateTime dataCriacao;
+
+    public enum Status {
+        AGUARDANDO_VERIFICACAO,
+        AGUARDANDO_CONFIRMACAO,
+        PENDENTE,
+        PRONTO
+    }
 
     public enum Categoria {
         HARDWARE,

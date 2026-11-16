@@ -52,3 +52,31 @@ CREATE TYPE categoria as ENUM('HARDWARE', 'SOFTWARE', 'REDE', 'OUTROS');
 
 ALTER TABLE pedidos
 ADD COLUMN categoria categoria NOT NULL;
+
+ALTER TABLE pedidos
+DROP COLUMN data_limite;
+
+ALTER TABLE pedidos
+DROP COLUMN data_marcada;
+
+CREATE TYPE status as ENUM('AGUARDANDO_VERIFICACAO', 'AGUARDANDO_CONFIRMACAO', 'PENDENTE', 'PRONTO');
+
+ALTER TABLE pedidos
+ADD COLUMN status status DEFAULT('AGUARDANDO_VERIFICACAO');
+
+CREATE TABLE confirmacao_pedido (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    pedido_id UUID NOT NULL UNIQUE,
+
+    token_hash VARCHAR(64) NOT NULL UNIQUE,
+
+    expira_em TIMESTAMP WITH TIME ZONE NOT NULL,
+
+    confirmado_em TIMESTAMP WITH TIME ZONE,
+
+    CONSTRAINT fk_confirmacao_pedido
+        FOREIGN KEY (pedido_id)
+        REFERENCES pedidos(id)
+        ON DELETE CASCADE
+);

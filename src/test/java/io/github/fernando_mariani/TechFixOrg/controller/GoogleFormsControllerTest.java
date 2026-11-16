@@ -56,7 +56,6 @@ class GoogleFormsControllerTest {
             assertNull(pedido.getPreco());
             assertNull(pedido.getTecnico());
             assertNull(pedido.getImagem());
-            assertNull(pedido.getDataMarcada());
             pedido.setId(id);
             return pedido;
         });
@@ -67,7 +66,7 @@ class GoogleFormsControllerTest {
                 .andExpect(header().string("Location", "http://localhost/pedidos/" + id))
                 .andExpect(jsonPath("$.id").value(id.toString()))
                 .andExpect(jsonPath("$.origem").value("FORMS"))
-                .andExpect(jsonPath("$.dataLimite").value("2027-01-11"));
+                .andExpect(jsonPath("$.status").value("AGUARDANDO_VERIFICACAO"));
         verify(pedidosRepository).saveAndFlush(any(PedidosEntity.class));
     }
 
@@ -126,10 +125,14 @@ class GoogleFormsControllerTest {
     }
 
     @Test
-    void deveRejeitarDataInvalida() throws Exception {
+    void deveIgnorarDataRemovida() throws Exception {
+        when(pedidosRepository.saveAndFlush(any(PedidosEntity.class))).thenAnswer(invocation -> {
+            PedidosEntity pedido = invocation.getArgument(0);
+            pedido.setId(UUID.randomUUID());
+            return pedido;
+        });
         mvc.perform(post("/integracoes/forms").header("X-Integration-Key", "chave-forms-teste")
                         .contentType("application/json").content(PEDIDO.replace("2027-01-11", "2027-02-30")))
-                .andExpect(status().isBadRequest());
-        verifyNoInteractions(pedidosRepository);
+                .andExpect(status().isCreated());
     }
 }

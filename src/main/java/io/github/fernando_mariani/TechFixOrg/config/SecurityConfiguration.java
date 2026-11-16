@@ -45,6 +45,8 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/auth/login", "/usuarios").permitAll()
                         .requestMatchers(HttpMethod.POST, "/integracoes/forms").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/confirmacao-pedido/confirmar").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/confirmacao-pedido/confirmar").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/admin", "/admin/**").hasAuthority("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/pedidos").hasAnyAuthority("ADMIN", "GERENTE")
