@@ -2,6 +2,7 @@ package io.github.fernando_mariani.TechFixOrg.config;
 
 import io.github.fernando_mariani.TechFixOrg.controller.PedidosController;
 import io.github.fernando_mariani.TechFixOrg.controller.AdminController;
+import io.github.fernando_mariani.TechFixOrg.entity.PedidosEntity.Categoria;
 import io.github.fernando_mariani.TechFixOrg.enums.Role;
 import io.github.fernando_mariani.TechFixOrg.service.AdminService;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -52,6 +54,7 @@ class JwtSecurityTest {
         var usuario = new UsuariosEntity();
         usuario.setId(UUID.randomUUID());
         usuario.setEmail("admin@example.com");
+        usuario.setNome("Admin");
         usuario.setSenha("hash");
         usuario.setRole(role);
         when(repository.findById(usuario.getId())).thenReturn(Optional.of(usuario));
@@ -106,6 +109,8 @@ class JwtSecurityTest {
         usuario.setId(UUID.randomUUID());
         usuario.setEmail("maria@example.com");
         usuario.setSenha("hash");
+        usuario.setRole(Role.GERENTE);
+        usuario.setNome("Maria");
         when(repository.findById(usuario.getId())).thenReturn(Optional.of(usuario));
         when(pedidosService.listar()).thenReturn(List.of());
         String token = tokenService.gerar(usuario).getTokenValue();
@@ -115,6 +120,53 @@ class JwtSecurityTest {
 
         verify(repository).findById(usuario.getId());
         verify(pedidosService).listar();
+    }
+
+    @ParameterizedTest
+    @EnumSource(Role.class)
+    void deveRestringirBuscasEUsarIdAutenticadoParaTecnico(Role role) throws Exception {
+        var usuario = new UsuariosEntity();
+        usuario.setId(UUID.randomUUID());
+        usuario.setEmail("maria@example.com");
+        usuario.setSenha("hash");
+        usuario.setRole(role);
+        usuario.setNome("Maria");
+        when(repository.findById(usuario.getId())).thenReturn(Optional.of(usuario));
+        when(pedidosService.buscar(null, null, null, null, 0, 10)).thenReturn(Page.empty());
+        when(pedidosService.buscarPorUsuarioTecnico(usuario.getId(), null, null, null, 0, 10))
+                .thenReturn(Page.empty());
+
+        String bearer = "Bearer " + tokenService.gerar(usuario).getTokenValue();
+        boolean podeBuscarTodos = role == Role.ADMIN || role == Role.GERENTE;
+        mvc.perform(get("/pedidos/busca").header("Authorization", bearer))
+                .andExpect(status().is(podeBuscarTodos ? 200 : 403));
+        mvc.perform(get("/pedidos/meus").header("Authorization", bearer)
+                        .param("tecnico", UUID.randomUUID().toString()))
+                .andExpect(status().is(role == Role.TECNICO ? 200 : 403));
+
+        if (podeBuscarTodos) {
+            verify(pedidosService).buscar(null, null, null, null, 0, 10);
+        } else if (role == Role.TECNICO) {
+            verify(pedidosService).buscarPorUsuarioTecnico(usuario.getId(), null, null, null, 0, 10);
+        }
+        verifyNoMoreInteractions(pedidosService);
+    }
+
+    @Test
+    void deveAceitarVariasCategoriasNaBusca() throws Exception {
+        var usuario = usuarioExcluido(UUID.randomUUID());
+        usuario.setSenha("hash");
+        usuario.setRole(Role.ADMIN);
+        var categorias = List.of(Categoria.HARDWARE, Categoria.SOFTWARE);
+        when(repository.findById(usuario.getId())).thenReturn(Optional.of(usuario));
+        when(pedidosService.buscar(null, null, categorias, null, 0, 10)).thenReturn(Page.empty());
+
+        mvc.perform(get("/pedidos/busca")
+                        .header("Authorization", "Bearer " + tokenService.gerar(usuario).getTokenValue())
+                        .param("categoria", "HARDWARE", "SOFTWARE"))
+                .andExpect(status().isOk());
+
+        verify(pedidosService).buscar(null, null, categorias, null, 0, 10);
     }
 
     @Test

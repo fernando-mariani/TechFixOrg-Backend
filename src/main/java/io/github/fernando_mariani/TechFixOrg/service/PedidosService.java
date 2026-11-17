@@ -3,6 +3,7 @@ package io.github.fernando_mariani.TechFixOrg.service;
 import io.github.fernando_mariani.TechFixOrg.dto.CriarPedidoDTO;
 import io.github.fernando_mariani.TechFixOrg.dto.AtualizarPedidoDTO;
 import io.github.fernando_mariani.TechFixOrg.entity.PedidosEntity;
+import io.github.fernando_mariani.TechFixOrg.entity.PedidosEntity.Categoria;
 import io.github.fernando_mariani.TechFixOrg.exceptions.AcaoInvalida;
 import io.github.fernando_mariani.TechFixOrg.exceptions.NaoEncontrado;
 import io.github.fernando_mariani.TechFixOrg.mapper.PedidosMapper;
@@ -11,10 +12,15 @@ import io.github.fernando_mariani.TechFixOrg.repository.TecnicoRepository;
 import io.github.fernando_mariani.TechFixOrg.response.PedidosResponse;
 import io.github.fernando_mariani.TechFixOrg.validations.PedidosValidation;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 @Service
@@ -43,6 +49,43 @@ public class PedidosService {
 
     public PedidosResponse buscarPorId(UUID id) {
         return mapper.toResponse(buscarPedido(id));
+    }
+
+    public Page<PedidosResponse> buscar(String busca, UUID tecnicoId, List<Categoria> categorias,
+                                         Sort.Direction ordenarPreco, int pagina, int tamanho) {
+        Specification<PedidosEntity> filtroTecnico = tecnicoId == null ? Specification.unrestricted()
+                : (pedido, consulta, cb) -> cb.equal(pedido.get("tecnico").get("id"), tecnicoId);
+        return buscar(filtroTecnico, busca, categorias, ordenarPreco, pagina, tamanho);
+    }
+
+    public Page<PedidosResponse> buscarPorUsuarioTecnico(UUID usuarioId, String busca, List<Categoria> categorias,
+                                                         Sort.Direction ordenarPreco, int pagina, int tamanho) {
+        Specification<PedidosEntity> filtroTecnico = (pedido, consulta, cb) ->
+                cb.equal(pedido.get("tecnico").get("usuario").get("id"), usuarioId);
+        return buscar(filtroTecnico, busca, categorias, ordenarPreco, pagina, tamanho);
+    }
+
+    private Page<PedidosResponse> buscar(Specification<PedidosEntity> filtros, String busca, List<Categoria> categorias,
+                                         Sort.Direction ordenarPreco, int pagina, int tamanho) {
+        if (pagina < 0 || tamanho < 1) {
+            throw new AcaoInvalida("A página deve ser maior ou igual a zero e o tamanho deve ser positivo.");
+        }
+        if (busca != null && !busca.isBlank()) {
+            String termo = "%" + busca.strip().toLowerCase(Locale.ROOT)
+                    .replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
+            filtros = filtros.and((pedido, consulta, cb) -> cb.or(
+                    cb.like(cb.lower(pedido.get("titulo")), termo, '!'),
+                    cb.like(cb.lower(pedido.get("descricao")), termo, '!')));
+        }
+        if (categorias != null && !categorias.isEmpty()) {
+            filtros = filtros.and((pedido, consulta, cb) -> pedido.get("categoria").in(categorias));
+        }
+
+        Sort ordem = Sort.by(Sort.Order.desc("dataCriacao"), Sort.Order.asc("id"));
+        if (ordenarPreco != null) {
+            ordem = Sort.by(ordenarPreco, "preco").and(ordem);
+        }
+        return repository.findAll(filtros, PageRequest.of(pagina, tamanho, ordem)).map(mapper::toResponse);
     }
 
     @Transactional
