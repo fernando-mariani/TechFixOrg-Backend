@@ -10,6 +10,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 public record AtualizarPedidoDTO(
         @NotBlank(message = "O título é obrigatório.")
@@ -22,8 +23,7 @@ public record AtualizarPedidoDTO(
         String imagem,
         @NotNull(message = "A origem é obrigatória.")
         Origem origem,
-        @Size(max = 100, message = "O técnico deve ter no máximo 100 caracteres.")
-        String tecnico,
+        UUID tecnicoId,
         @NotBlank(message = "O nome do cliente é obrigatório.")
         @Size(max = 100, message = "O nome do cliente deve ter no máximo 100 caracteres.")
         String nomeCliente,

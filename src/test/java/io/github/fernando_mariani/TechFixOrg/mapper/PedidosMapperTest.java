@@ -18,13 +18,14 @@ class PedidosMapperTest {
 
     @Test
     void devePreservarCamposNaEdicaoENaResposta() {
-        var dto = pedido("João", new BigDecimal("150.50"));
+        var dto = pedido(UUID.randomUUID(), new BigDecimal("150.50"));
 
         var entity = new PedidosEntity();
         mapper.atualizarEntity(dto, entity);
         var response = mapper.toResponse(entity);
 
-        assertEquals(dto.tecnico(), response.tecnico());
+        assertNull(response.tecnicoId());
+        assertNull(response.tecnico());
         assertEquals(dto.nomeCliente(), response.nomeCliente());
         assertEquals(dto.emailCliente(), response.emailCliente());
         assertEquals(dto.preco(), response.preco());
@@ -49,7 +50,7 @@ class PedidosMapperTest {
         entity.setId(id);
         entity.setStatus(PedidosEntity.Status.PENDENTE);
         entity.setDataCriacao(criacao);
-        var dto = pedido("João", new BigDecimal("150.50"));
+        var dto = pedido(UUID.randomUUID(), new BigDecimal("150.50"));
 
         mapper.atualizarEntity(dto, entity);
 
@@ -59,13 +60,13 @@ class PedidosMapperTest {
         assertEquals(dto.nomeCliente(), entity.getNomeCliente());
         assertEquals(dto.emailCliente(), entity.getEmailCliente());
         assertEquals(dto.categoria(), entity.getCategoria());
-        assertEquals(dto.tecnico(), entity.getTecnico());
+        assertNull(entity.getTecnico());
         assertEquals(dto.preco(), entity.getPreco());
     }
 
-    private AtualizarPedidoDTO pedido(String tecnico, BigDecimal preco) {
+    private AtualizarPedidoDTO pedido(UUID tecnicoId, BigDecimal preco) {
         return new AtualizarPedidoDTO("Reparo", "Computador não liga", null, PedidosEntity.Origem.EMAIL,
-                tecnico, "Maria", "maria@example.com",
+                tecnicoId, "Maria", "maria@example.com",
                 preco, PedidosEntity.Categoria.HARDWARE);
     }
 }

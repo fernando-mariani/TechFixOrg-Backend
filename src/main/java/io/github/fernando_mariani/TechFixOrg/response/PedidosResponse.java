@@ -15,6 +15,7 @@ public record PedidosResponse(
         String descricao,
         String imagem,
         Origem origem,
+        UUID tecnicoId,
         String tecnico,
         LocalDateTime dataCriacao,
         String nomeCliente,

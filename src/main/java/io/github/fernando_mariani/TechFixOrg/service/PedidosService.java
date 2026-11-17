@@ -6,6 +6,7 @@ import io.github.fernando_mariani.TechFixOrg.entity.PedidosEntity;
 import io.github.fernando_mariani.TechFixOrg.exceptions.NaoEncontrado;
 import io.github.fernando_mariani.TechFixOrg.mapper.PedidosMapper;
 import io.github.fernando_mariani.TechFixOrg.repository.PedidosRepository;
+import io.github.fernando_mariani.TechFixOrg.repository.TecnicoRepository;
 import io.github.fernando_mariani.TechFixOrg.response.PedidosResponse;
 import io.github.fernando_mariani.TechFixOrg.validations.PedidosValidation;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ import java.util.UUID;
 public class PedidosService {
 
     private final PedidosRepository repository;
+    private final TecnicoRepository tecnicoRepository;
     private final PedidosMapper mapper;
     private final PedidosValidation validation;
 
@@ -45,7 +47,10 @@ public class PedidosService {
     public PedidosResponse atualizar(UUID id, AtualizarPedidoDTO dto) {
         PedidosEntity pedido = buscarPedido(id);
         validation.validar(dto, id);
+        var tecnico = dto.tecnicoId() == null ? null : tecnicoRepository.findById(dto.tecnicoId())
+                .orElseThrow(() -> new NaoEncontrado("Técnico com ID " + dto.tecnicoId() + " não encontrado."));
         mapper.atualizarEntity(dto, pedido);
+        pedido.setTecnico(tecnico);
         return mapper.toResponse(repository.saveAndFlush(pedido));
     }
 

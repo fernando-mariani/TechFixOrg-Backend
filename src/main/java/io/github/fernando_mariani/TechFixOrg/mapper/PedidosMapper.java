@@ -20,10 +20,13 @@ public interface PedidosMapper {
     @Mapping(target = "preco", ignore = true)
     PedidosEntity toEntity(CriarPedidoDTO dto);
 
+    @Mapping(target = "tecnicoId", source = "tecnico.id")
+    @Mapping(target = "tecnico", source = "tecnico.nome")
     PedidosResponse toResponse(PedidosEntity entity);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "dataCriacao", ignore = true)
     @Mapping(target = "status", ignore = true)
+    @Mapping(target = "tecnico", ignore = true)
     void atualizarEntity(AtualizarPedidoDTO dto, @MappingTarget PedidosEntity entity);
 }

@@ -39,6 +39,8 @@ class GoogleFormsControllerTest {
     private RateLimitService rateLimitService;
     @MockitoBean
     private PedidosRepository pedidosRepository;
+    @MockitoBean
+    private io.github.fernando_mariani.TechFixOrg.repository.TecnicoRepository tecnicoRepository;
 
     private static final String PEDIDO = """
             {"titulo":"Reparo","descricao":"Computador não liga","origem":"FORMS",

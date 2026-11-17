@@ -2,6 +2,7 @@ package io.github.fernando_mariani.TechFixOrg.service;
 
 import io.github.fernando_mariani.TechFixOrg.dto.AtualizarRoleDTO;
 import io.github.fernando_mariani.TechFixOrg.entity.UsuariosEntity;
+import io.github.fernando_mariani.TechFixOrg.enums.Role;
 import io.github.fernando_mariani.TechFixOrg.exceptions.NaoEncontrado;
 import io.github.fernando_mariani.TechFixOrg.mapper.UsuariosMapper;
 import io.github.fernando_mariani.TechFixOrg.repository.UsuariosRepository;
@@ -19,6 +20,7 @@ public class AdminService {
 
     private final UsuariosRepository repository;
     private final UsuariosMapper mapper;
+    private final EmailService emailService;
 
     @Transactional
     public UsuariosResponse verificarUsuario(UUID id) {
@@ -30,7 +32,13 @@ public class AdminService {
     @Transactional
     public UsuariosResponse atualizarRole(UUID id, AtualizarRoleDTO dto) {
         UsuariosEntity usuario = buscarUsuario(id);
+        if(usuario.getVerificado() == false) {
+            usuario.setVerificado(true);
+        }
         usuario.setRole(dto.role());
+        if(dto.role() == Role.TECNICO) {
+            emailService.enviarConviteTecnico(id);
+        }
         return mapper.toResponse(repository.saveAndFlush(usuario));
     }
 

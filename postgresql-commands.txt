@@ -80,3 +80,47 @@ CREATE TABLE confirmacao_pedido (
         REFERENCES pedidos(id)
         ON DELETE CASCADE
 );
+
+CREATE TABLE tecnico (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    usuario_id UUID NOT NULL UNIQUE,
+
+    nome VARCHAR(100) NOT NULL,
+
+	categorias categoria[] NOT NULL DEFAULT '{}',
+
+    CONSTRAINT fk_tecnico
+        FOREIGN KEY (usuario_id)
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE
+);
+
+ALTER TABLE pedidos
+DROP COLUMN tecnico;
+
+ALTER TABLE pedidos
+ADD COLUMN tecnico_id UUID;
+
+ALTER TABLE pedidos
+ADD CONSTRAINT fk_pedidos_tecnico
+FOREIGN KEY (tecnico_id)
+REFERENCES tecnico(id)
+ON DELETE SET NULL;
+
+CREATE TABLE token_tecnico (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    usuario_id UUID NOT NULL UNIQUE,
+
+    token_hash VARCHAR(64) NOT NULL UNIQUE,
+
+    expira_em TIMESTAMP WITH TIME ZONE NOT NULL,
+
+    confirmado_em TIMESTAMP WITH TIME ZONE,
+
+    CONSTRAINT fk_token_tecnico
+        FOREIGN KEY (usuario_id)
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE
+);

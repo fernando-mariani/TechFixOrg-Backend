@@ -1,6 +1,12 @@
 package io.github.fernando_mariani.TechFixOrg.entity;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ForeignKey;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -44,8 +50,10 @@ public class PedidosEntity {
     @Column(name = "origem", nullable = false, columnDefinition = "origem")
     private Origem origem;
 
-    @Column(name = "tecnico", length = 100)
-    private String tecnico;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tecnico_id", foreignKey = @ForeignKey(name = "fk_pedidos_tecnico"))
+    @OnDelete(action = OnDeleteAction.SET_NULL)
+    private TecnicoEntity tecnico;
 
     @Column(name = "nome_cliente", nullable = false, length = 100)
     private String nomeCliente;

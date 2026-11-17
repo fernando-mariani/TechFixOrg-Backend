@@ -18,7 +18,8 @@ import static org.mockito.Mockito.*;
 class AdminServiceTest {
 
     private final UsuariosRepository repository = mock(UsuariosRepository.class);
-    private final AdminService service = new AdminService(repository, Mappers.getMapper(UsuariosMapper.class));
+    private final EmailService emailService = mock(EmailService.class);
+    private final AdminService service = new AdminService(repository, Mappers.getMapper(UsuariosMapper.class), emailService);
 
     @Test
     void deveVerificarUsuarioSemAlterarRole() {
@@ -27,16 +28,32 @@ class AdminServiceTest {
         assertTrue(response.verificado());
         assertEquals(Role.USER, response.role());
         verify(repository).saveAndFlush(usuario);
+        verifyNoInteractions(emailService);
     }
 
     @Test
-    void deveSubstituirRoleSemAlterarVerificacao() {
-        var usuario = usuarioExistente();
+    void deveAtualizarRoleEVerificarUsuarioSemEnviarConviteParaOutrasRoles() {
         for (Role role : Role.values()) {
+            if (role == Role.TECNICO) {
+                continue;
+            }
+            var usuario = usuarioExistente();
             var response = service.atualizarRole(usuario.getId(), new AtualizarRoleDTO(role));
             assertEquals(role, response.role());
-            assertFalse(response.verificado());
+            assertTrue(response.verificado());
+            verify(repository).saveAndFlush(usuario);
         }
+        verifyNoInteractions(emailService);
+    }
+
+    @Test
+    void deveAtualizarRoleParaTecnicoVerificarUsuarioEEnviarConvite() {
+        var usuario = usuarioExistente();
+        var response = service.atualizarRole(usuario.getId(), new AtualizarRoleDTO(Role.TECNICO));
+        assertEquals(Role.TECNICO, response.role());
+        assertTrue(response.verificado());
+        verify(emailService).enviarConviteTecnico(usuario.getId());
+        verify(repository).saveAndFlush(usuario);
     }
 
     @Test
@@ -45,8 +62,9 @@ class AdminServiceTest {
         when(repository.findById(id)).thenReturn(Optional.empty());
         assertThrows(NaoEncontrado.class, () -> service.verificarUsuario(id));
         assertThrows(NaoEncontrado.class,
-                () -> service.atualizarRole(id, new AtualizarRoleDTO(Role.ADMIN)));
+                () -> service.atualizarRole(id, new AtualizarRoleDTO(Role.TECNICO)));
         verify(repository, never()).saveAndFlush(any());
+        verifyNoInteractions(emailService);
     }
 
     private UsuariosEntity usuarioExistente() {

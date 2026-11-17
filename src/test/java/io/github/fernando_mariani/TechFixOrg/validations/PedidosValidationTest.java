@@ -53,7 +53,7 @@ class PedidosValidationTest {
     @Test
     void deveRejeitarCamposQueExcedemLimitesDaTabela() {
         var dto = new AtualizarPedidoDTO("a".repeat(101), "a".repeat(301), "a".repeat(301),
-                Origem.EMAIL, "a".repeat(101), "a".repeat(101),
+                Origem.EMAIL, UUID.randomUUID(), "a".repeat(101),
                 "a".repeat(190) + "@example.com", null, Categoria.HARDWARE);
 
         AcaoInvalida erro = assertThrows(AcaoInvalida.class, () -> validation.validar(dto, null));
@@ -61,7 +61,6 @@ class PedidosValidationTest {
         assertTrue(erro.getMessage().contains("O título deve ter no máximo 100 caracteres."));
         assertTrue(erro.getMessage().contains("A descrição deve ter no máximo 300 caracteres."));
         assertTrue(erro.getMessage().contains("A imagem deve ter no máximo 300 caracteres."));
-        assertTrue(erro.getMessage().contains("O técnico deve ter no máximo 100 caracteres."));
         assertTrue(erro.getMessage().contains("O nome do cliente deve ter no máximo 100 caracteres."));
         assertTrue(erro.getMessage().contains("O e-mail do cliente deve ter no máximo 200 caracteres."));
         verifyNoInteractions(repository);
@@ -129,7 +128,7 @@ class PedidosValidationTest {
 
     @Test
     void devePermitirPedidoComPrecoETecnico() {
-        var dto = new AtualizarPedidoDTO("Reparo", "Computador não liga", null, Origem.EMAIL, "João",
+        var dto = new AtualizarPedidoDTO("Reparo", "Computador não liga", null, Origem.EMAIL, UUID.randomUUID(),
                 "Maria", "maria@example.com",
                 new BigDecimal("99999999.99"), Categoria.HARDWARE);
 

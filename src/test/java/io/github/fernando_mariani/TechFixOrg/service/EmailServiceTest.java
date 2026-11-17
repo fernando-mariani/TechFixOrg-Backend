@@ -1,6 +1,9 @@
 package io.github.fernando_mariani.TechFixOrg.service;
 
 import io.github.fernando_mariani.TechFixOrg.entity.PedidosEntity;
+import io.github.fernando_mariani.TechFixOrg.entity.TecnicoEntity;
+import io.github.fernando_mariani.TechFixOrg.entity.TokenTecnicoEntity;
+import io.github.fernando_mariani.TechFixOrg.entity.UsuariosEntity;
 import io.github.fernando_mariani.TechFixOrg.exceptions.AcaoInvalida;
 import io.github.fernando_mariani.TechFixOrg.exceptions.NaoEncontrado;
 import io.github.fernando_mariani.TechFixOrg.repository.PedidosRepository;
@@ -28,8 +31,9 @@ class EmailServiceTest {
     private final JavaMailSender mailSender = mock(JavaMailSender.class);
     private final PedidosRepository repository = mock(PedidosRepository.class);
     private final ConfirmacaoPedidoService confirmacaoService = mock(ConfirmacaoPedidoService.class);
+    private final TokenTecnicoService tokenTecnicoService = mock(TokenTecnicoService.class);
     private final EmailService service = new EmailService(mailSender, repository, "techfix@example.com",
-            confirmacaoService, "https://api.example.com/");
+            confirmacaoService, "https://api.example.com/", tokenTecnicoService);
 
     @BeforeEach
     void configurarMensagem() {
@@ -65,6 +69,29 @@ class EmailServiceTest {
     }
 
     @Test
+    void deveEnviarConviteAoEmailCadastradoComTokenDoUsuario() throws Exception {
+        var usuario = new UsuariosEntity();
+        usuario.setId(UUID.randomUUID());
+        usuario.setNome("João");
+        usuario.setEmail("joao@example.com");
+        var token = new TokenTecnicoEntity();
+        token.setUsuario(usuario);
+        token.setTokenHash("b".repeat(64));
+        when(tokenTecnicoService.criar(usuario.getId())).thenReturn(token);
+
+        service.enviarConviteTecnico(usuario.getId());
+
+        var captor = ArgumentCaptor.forClass(MimeMessage.class);
+        verify(mailSender).send(captor.capture());
+        var mensagem = captor.getValue();
+        assertEquals(usuario.getEmail(), mensagem.getAllRecipients()[0].toString());
+        String corpo = conteudo(mensagem);
+        assertTrue(corpo.contains("Concluir cadastro como técnico"));
+        assertTrue(corpo.contains("href=\"https://api.example.com/tecnico/params?id="
+                + usuario.getId() + "&amp;token=" + token.getTokenHash() + "\""));
+    }
+
+    @Test
     void deveRejeitarPedidoInexistente() {
         UUID id = UUID.randomUUID();
         when(repository.findById(id)).thenReturn(Optional.empty());
@@ -78,7 +105,7 @@ class EmailServiceTest {
             var pedido = pedido();
             switch (campo) {
                 case "tecnico" -> pedido.setTecnico(null);
-                case "tecnicoEmBranco" -> pedido.setTecnico(" ");
+                case "tecnicoEmBranco" -> pedido.getTecnico().setNome(" ");
                 case "preco" -> pedido.setPreco(null);
                 case "email" -> pedido.setEmailCliente(" ");
             }
@@ -117,7 +144,9 @@ class EmailServiceTest {
         pedido.setEmailCliente("maria@example.com");
         pedido.setTitulo("Reparo");
         pedido.setDescricao("Computador não liga");
-        pedido.setTecnico("João");
+        var tecnico = new TecnicoEntity();
+        tecnico.setNome("João");
+        pedido.setTecnico(tecnico);
         pedido.setPreco(new BigDecimal("150.50"));
         return pedido;
     }
