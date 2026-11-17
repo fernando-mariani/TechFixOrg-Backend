@@ -1,5 +1,6 @@
 package io.github.fernando_mariani.TechFixOrg.service;
 
+import io.github.fernando_mariani.TechFixOrg.entity.PedidosEntity;
 import io.github.fernando_mariani.TechFixOrg.exceptions.AcaoInvalida;
 import io.github.fernando_mariani.TechFixOrg.exceptions.NaoEncontrado;
 import io.github.fernando_mariani.TechFixOrg.repository.PedidosRepository;
@@ -137,6 +138,35 @@ public class EmailService {
                 """.formatted(HtmlUtils.htmlEscape(usuario.getNome()), HtmlUtils.htmlEscape(link));
 
         enviarMensagem(usuario.getEmail(), "TechFixOrg - Conclua seu cadastro como técnico", texto, html);
+    }
+
+    public void enviarPedidoPronto(PedidosEntity pedido) {
+        if (pedido.getEmailCliente() == null || pedido.getEmailCliente().isBlank()) {
+            throw new AcaoInvalida("O e-mail do cliente é obrigatório para avisar que o pedido está pronto.");
+        }
+
+        String texto = """
+                Olá, %s!
+
+                Seu pedido de conserto está pronto.
+                Pedido: %s
+                Título: %s
+
+                Atenciosamente,
+                Equipe TechFixOrg
+                """.formatted(pedido.getNomeCliente(), pedido.getId(), pedido.getTitulo());
+        String html = """
+                <!doctype html>
+                <html lang="pt-BR"><body style="font-family:Arial,sans-serif;color:#1f2937">
+                <p>Olá, %s!</p>
+                <p>Seu pedido de conserto está pronto.</p>
+                <p>Pedido: %s<br>Título: %s</p>
+                <p>Atenciosamente,<br>Equipe TechFixOrg</p>
+                </body></html>
+                """.formatted(HtmlUtils.htmlEscape(pedido.getNomeCliente()), pedido.getId(),
+                HtmlUtils.htmlEscape(pedido.getTitulo()));
+
+        enviarMensagem(pedido.getEmailCliente(), "TechFixOrg - Seu pedido está pronto", texto, html);
     }
 
     private void enviarMensagem(String destinatario, String assunto, String texto, String html) {

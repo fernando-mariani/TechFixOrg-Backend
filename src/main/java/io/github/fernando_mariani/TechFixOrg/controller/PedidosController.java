@@ -53,6 +53,11 @@ public class PedidosController {
         return ResponseEntity.ok(service.atualizar(id, dto));
     }
 
+    @PostMapping("/{id}/confirmar")
+    public ResponseEntity<PedidosResponse> confirmar(@PathVariable UUID id) {
+        return ResponseEntity.ok(service.confirmar(id));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> excluir(@PathVariable UUID id) {
         service.excluir(id);
