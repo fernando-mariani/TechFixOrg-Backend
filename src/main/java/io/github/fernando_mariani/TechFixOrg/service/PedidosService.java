@@ -60,9 +60,10 @@ public class PedidosService {
 
     public Page<PedidosResponse> buscarPorUsuarioTecnico(UUID usuarioId, String busca, List<Categoria> categorias,
                                                          Sort.Direction ordenarPreco, int pagina, int tamanho) {
-        Specification<PedidosEntity> filtroTecnico = (pedido, consulta, cb) ->
-                cb.equal(pedido.get("tecnico").get("usuario").get("id"), usuarioId);
-        return buscar(filtroTecnico, busca, categorias, ordenarPreco, pagina, tamanho);
+        Specification<PedidosEntity> filtroPedidosPendentesDoTecnico = (pedido, consulta, cb) -> cb.and(
+                cb.equal(pedido.get("tecnico").get("usuario").get("id"), usuarioId),
+                cb.equal(pedido.get("status"), PedidosEntity.Status.PENDENTE));
+        return buscar(filtroPedidosPendentesDoTecnico, busca, categorias, ordenarPreco, pagina, tamanho);
     }
 
     private Page<PedidosResponse> buscar(Specification<PedidosEntity> filtros, String busca, List<Categoria> categorias,
