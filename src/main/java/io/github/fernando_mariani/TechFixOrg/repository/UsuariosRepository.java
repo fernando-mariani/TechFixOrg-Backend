@@ -1,9 +1,11 @@
 package io.github.fernando_mariani.TechFixOrg.repository;
 
 import io.github.fernando_mariani.TechFixOrg.entity.UsuariosEntity;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.stereotype.Repository;
 
 import java.util.UUID;
@@ -11,6 +13,9 @@ import java.util.Optional;
 
 @Repository
 public interface UsuariosRepository extends JpaRepository<UsuariosEntity, UUID> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<UsuariosEntity> findForUpdateById(UUID id);
 
     boolean existsByEmailIgnoreCase(String email);
 

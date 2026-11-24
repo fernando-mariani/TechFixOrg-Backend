@@ -62,21 +62,21 @@ public class ConfirmacaoPedidoService {
 
     @Transactional
     public ConfirmacaoPedidoEntity criar(UUID pedidoId) {
-        var pedido = pedidosRepository.findById(pedidoId)
+        var pedido = pedidosRepository.findForUpdateById(pedidoId)
                 .orElseThrow(() -> new NaoEncontrado("Pedido com ID " + pedidoId + " não encontrado."));
 
-        if (repository.findByPedidoId(pedidoId).isPresent()) {
+        var confirmacao = repository.findByPedidoId(pedidoId).orElseGet(ConfirmacaoPedidoEntity::new);
+        var agora = OffsetDateTime.now();
+        if (confirmacao.getExpiraEm() != null && confirmacao.getExpiraEm().isAfter(agora)) {
             throw new RegistroDuplicado("Já existe uma confirmação para o pedido com ID " + pedidoId + ".");
         }
 
         byte[] token = new byte[32];
         random.nextBytes(token);
 
-        var confirmacao = new ConfirmacaoPedidoEntity();
         confirmacao.setPedido(pedido);
         confirmacao.setTokenHash(HexFormat.of().formatHex(token));
-        confirmacao.setExpiraEm(OffsetDateTime.now().plusDays(5));
-        confirmacao.setConfirmadoEm(null);
+        confirmacao.setExpiraEm(agora.plusDays(5));
 
         return repository.saveAndFlush(confirmacao);
     }

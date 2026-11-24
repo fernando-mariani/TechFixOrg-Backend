@@ -66,21 +66,21 @@ public class TokenTecnicoService {
 
     @Transactional
     public TokenTecnicoEntity criar(UUID usuarioId) {
-        var usuario = usuariosRepository.findById(usuarioId)
+        var usuario = usuariosRepository.findForUpdateById(usuarioId)
                 .orElseThrow(() -> new NaoEncontrado("Usuário com ID " + usuarioId + " não encontrado."));
 
-        if (repository.findByUsuarioId(usuarioId).isPresent()) {
+        var confirmacao = repository.findByUsuarioId(usuarioId).orElseGet(TokenTecnicoEntity::new);
+        var agora = OffsetDateTime.now();
+        if (confirmacao.getExpiraEm() != null && confirmacao.getExpiraEm().isAfter(agora)) {
             throw new RegistroDuplicado("Já existe uma confirmação para o usuário com ID " + usuarioId + ".");
         }
 
         byte[] token = new byte[32];
         random.nextBytes(token);
 
-        var confirmacao = new TokenTecnicoEntity();
         confirmacao.setUsuario(usuario);
         confirmacao.setTokenHash(HexFormat.of().formatHex(token));
-        confirmacao.setExpiraEm(OffsetDateTime.now().plusDays(5));
-        confirmacao.setConfirmadoEm(null);
+        confirmacao.setExpiraEm(agora.plusDays(5));
 
         return repository.saveAndFlush(confirmacao);
     }

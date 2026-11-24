@@ -99,7 +99,7 @@ class ConfirmacaoPedidoServiceTest {
     void deveCriarConfirmacaoComTokenAleatorioECincoDiasDeValidade() {
         var pedido = new PedidosEntity();
         pedido.setId(UUID.randomUUID());
-        when(pedidosRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+        when(pedidosRepository.findForUpdateById(pedido.getId())).thenReturn(Optional.of(pedido));
         when(repository.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
         var antes = OffsetDateTime.now().plusDays(5);
 
@@ -122,12 +122,29 @@ class ConfirmacaoPedidoServiceTest {
     }
 
     @Test
-    void deveRejeitarConfirmacaoDuplicada() {
-        var id = UUID.randomUUID();
-        when(pedidosRepository.findById(id)).thenReturn(Optional.of(new PedidosEntity()));
-        when(repository.findByPedidoId(id)).thenReturn(Optional.of(new ConfirmacaoPedidoEntity()));
+    void deveRejeitarConfirmacaoDuplicadaEnquantoTokenEstiverValido() {
+        var confirmacao = confirmacaoValida();
+        var id = confirmacao.getPedido().getId();
+        when(pedidosRepository.findForUpdateById(id)).thenReturn(Optional.of(confirmacao.getPedido()));
+        when(repository.findByPedidoId(id)).thenReturn(Optional.of(confirmacao));
 
         assertThrows(RegistroDuplicado.class, () -> service.criar(id));
         verify(repository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void deveSubstituirTokenExpiradoNoMesmoRegistro() {
+        var confirmacao = confirmacaoValida();
+        var pedido = confirmacao.getPedido();
+        confirmacao.setExpiraEm(OffsetDateTime.now().minusDays(1));
+        when(pedidosRepository.findForUpdateById(pedido.getId())).thenReturn(Optional.of(pedido));
+        when(repository.findByPedidoId(pedido.getId())).thenReturn(Optional.of(confirmacao));
+        when(repository.saveAndFlush(confirmacao)).thenReturn(confirmacao);
+
+        assertSame(confirmacao, service.criar(pedido.getId()));
+        assertNotEquals("token", confirmacao.getTokenHash());
+        assertTrue(confirmacao.getExpiraEm().isAfter(OffsetDateTime.now().plusDays(4)));
+        assertNull(confirmacao.getConfirmadoEm());
+        verify(repository).saveAndFlush(confirmacao);
     }
 }
