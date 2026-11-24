@@ -3,6 +3,7 @@ package io.github.fernando_mariani.TechFixOrg.controller;
 import io.github.fernando_mariani.TechFixOrg.dto.CriarTecnicoDTO;
 import io.github.fernando_mariani.TechFixOrg.entity.PedidosEntity.Categoria;
 import io.github.fernando_mariani.TechFixOrg.exceptions.AcaoInvalida;
+import io.github.fernando_mariani.TechFixOrg.response.TecnicoResponse;
 import io.github.fernando_mariani.TechFixOrg.service.TecnicoService;
 import io.github.fernando_mariani.TechFixOrg.service.TokenTecnicoService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -11,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,6 +33,11 @@ public class TecnicoController {
 
     private final TecnicoService service;
     private final TokenTecnicoService tokenTecnicoService;
+
+    @GetMapping("/me")
+    public TecnicoResponse buscarMeuPerfil(@AuthenticationPrincipal Jwt jwt) {
+        return service.buscarPorUsuarioId(UUID.fromString(jwt.getSubject()));
+    }
 
     @GetMapping(value = "/params", produces = MediaType.TEXT_HTML_VALUE)
     public ResponseEntity<String> exibirFormulario(@RequestParam("id") UUID usuarioId,

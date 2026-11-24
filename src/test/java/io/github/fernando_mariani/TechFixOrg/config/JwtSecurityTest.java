@@ -2,7 +2,9 @@ package io.github.fernando_mariani.TechFixOrg.config;
 
 import io.github.fernando_mariani.TechFixOrg.controller.PedidosController;
 import io.github.fernando_mariani.TechFixOrg.controller.AdminController;
+import io.github.fernando_mariani.TechFixOrg.controller.TecnicoController;
 import io.github.fernando_mariani.TechFixOrg.entity.PedidosEntity.Categoria;
+import io.github.fernando_mariani.TechFixOrg.entity.TecnicoEntity;
 import io.github.fernando_mariani.TechFixOrg.enums.Role;
 import io.github.fernando_mariani.TechFixOrg.service.AdminService;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -10,8 +12,11 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.http.MediaType;
 import io.github.fernando_mariani.TechFixOrg.entity.UsuariosEntity;
 import io.github.fernando_mariani.TechFixOrg.repository.UsuariosRepository;
+import io.github.fernando_mariani.TechFixOrg.repository.TecnicoRepository;
 import io.github.fernando_mariani.TechFixOrg.service.PedidosService;
 import io.github.fernando_mariani.TechFixOrg.service.TokenService;
+import io.github.fernando_mariani.TechFixOrg.service.TecnicoService;
+import io.github.fernando_mariani.TechFixOrg.service.TokenTecnicoService;
 import io.github.fernando_mariani.TechFixOrg.service.UsuarioDetailsService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,11 +34,12 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
-@WebMvcTest(controllers = {PedidosController.class, AdminController.class},
+@WebMvcTest(controllers = {PedidosController.class, AdminController.class, TecnicoController.class},
         properties = "security.jwt.secret=segredo-de-testes-com-pelo-menos-32-bytes")
 @Import({SecurityConfiguration.class, JwtConfiguration.class, JwtUserAuthenticationConverter.class,
-        UsuarioDetailsService.class, TokenService.class,
+        UsuarioDetailsService.class, TokenService.class, TecnicoService.class,
         io.github.fernando_mariani.TechFixOrg.service.RateLimitService.class})
 class JwtSecurityTest {
 
@@ -47,6 +53,43 @@ class JwtSecurityTest {
     private AdminService adminService;
     @MockitoBean
     private UsuariosRepository repository;
+    @MockitoBean
+    private TecnicoRepository tecnicoRepository;
+    @MockitoBean
+    private TokenTecnicoService tokenTecnicoService;
+
+    @ParameterizedTest
+    @EnumSource(Role.class)
+    void deveConsultarPerfilPeloIdDoJwtSomenteParaTecnico(Role role) throws Exception {
+        var usuario = new UsuariosEntity();
+        usuario.setId(UUID.randomUUID());
+        usuario.setEmail("tecnico@example.com");
+        usuario.setNome("Maria");
+        usuario.setSenha("hash");
+        usuario.setRole(role);
+        when(repository.findById(usuario.getId())).thenReturn(Optional.of(usuario));
+        String token = tokenService.gerar(usuario).getTokenValue();
+
+        var tecnico = new TecnicoEntity();
+        tecnico.setUsuario(usuario);
+        tecnico.setNome("Maria");
+        tecnico.setCategorias(new Categoria[]{Categoria.HARDWARE, Categoria.REDE});
+        when(tecnicoRepository.findByUsuarioId(usuario.getId())).thenReturn(Optional.of(tecnico));
+
+        var resposta = mvc.perform(get("/tecnico/me").header("Authorization", "Bearer " + token));
+
+        if (role == Role.TECNICO) {
+            resposta.andExpect(status().isOk())
+                    .andExpect(jsonPath("$.email").value(usuario.getEmail()))
+                    .andExpect(jsonPath("$.nome").value("Maria"))
+                    .andExpect(jsonPath("$.categorias[0]").value("HARDWARE"))
+                    .andExpect(jsonPath("$.categorias[1]").value("REDE"));
+            verify(tecnicoRepository).findByUsuarioId(usuario.getId());
+        } else {
+            resposta.andExpect(status().isForbidden());
+            verifyNoInteractions(tecnicoRepository);
+        }
+    }
 
     @ParameterizedTest
     @EnumSource(Role.class)
@@ -93,7 +136,9 @@ class JwtSecurityTest {
     @Test
     void deveRejeitarRequisicaoSemToken() throws Exception {
         mvc.perform(get("/pedidos")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/tecnico/me")).andExpect(status().isUnauthorized());
         verifyNoInteractions(pedidosService);
+        verifyNoInteractions(tecnicoRepository);
     }
 
     @Test

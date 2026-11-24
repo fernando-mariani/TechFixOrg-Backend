@@ -53,7 +53,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/admin", "/admin/**").hasAuthority("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/pedidos", "/pedidos/busca")
                         .hasAnyAuthority("ADMIN", "GERENTE")
-                        .requestMatchers(HttpMethod.GET, "/pedidos/meus").hasAuthority("TECNICO")
+                        .requestMatchers(HttpMethod.GET, "/pedidos/meus", "/tecnico/me").hasAuthority("TECNICO")
                         .requestMatchers(HttpMethod.POST, "/pedidos", "/pedidos/{id}/confirmar")
                         .hasAnyAuthority("ADMIN", "GERENTE")
                         .requestMatchers(HttpMethod.PUT, "/pedidos").hasAnyAuthority("ADMIN", "GERENTE")
