@@ -3,9 +3,11 @@ package io.github.fernando_mariani.TechFixOrg.config;
 import io.github.fernando_mariani.TechFixOrg.controller.PedidosController;
 import io.github.fernando_mariani.TechFixOrg.controller.AdminController;
 import io.github.fernando_mariani.TechFixOrg.controller.TecnicoController;
+import io.github.fernando_mariani.TechFixOrg.controller.UsuariosController;
 import io.github.fernando_mariani.TechFixOrg.entity.PedidosEntity.Categoria;
 import io.github.fernando_mariani.TechFixOrg.entity.TecnicoEntity;
 import io.github.fernando_mariani.TechFixOrg.enums.Role;
+import io.github.fernando_mariani.TechFixOrg.mapper.UsuariosMapperImpl;
 import io.github.fernando_mariani.TechFixOrg.service.AdminService;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -18,6 +20,8 @@ import io.github.fernando_mariani.TechFixOrg.service.TokenService;
 import io.github.fernando_mariani.TechFixOrg.service.TecnicoService;
 import io.github.fernando_mariani.TechFixOrg.service.TokenTecnicoService;
 import io.github.fernando_mariani.TechFixOrg.service.UsuarioDetailsService;
+import io.github.fernando_mariani.TechFixOrg.service.UsuariosService;
+import io.github.fernando_mariani.TechFixOrg.validations.UsuariosValidation;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -36,10 +40,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
-@WebMvcTest(controllers = {PedidosController.class, AdminController.class, TecnicoController.class},
+@WebMvcTest(controllers = {PedidosController.class, AdminController.class, TecnicoController.class,
+        UsuariosController.class},
         properties = "security.jwt.secret=segredo-de-testes-com-pelo-menos-32-bytes")
 @Import({SecurityConfiguration.class, JwtConfiguration.class, JwtUserAuthenticationConverter.class,
         UsuarioDetailsService.class, TokenService.class, TecnicoService.class,
+        UsuariosService.class, UsuariosMapperImpl.class, UsuariosValidation.class,
         io.github.fernando_mariani.TechFixOrg.service.RateLimitService.class})
 class JwtSecurityTest {
 
@@ -57,6 +63,24 @@ class JwtSecurityTest {
     private TecnicoRepository tecnicoRepository;
     @MockitoBean
     private TokenTecnicoService tokenTecnicoService;
+
+    @ParameterizedTest
+    @EnumSource(Role.class)
+    void deveConsultarDadosDoUsuarioAutenticado(Role role) throws Exception {
+        var usuario = usuarioExcluido(UUID.randomUUID());
+        usuario.setSenha("hash");
+        usuario.setRole(role);
+        when(repository.findById(usuario.getId())).thenReturn(Optional.of(usuario));
+
+        mvc.perform(get("/usuarios/me")
+                        .header("Authorization", "Bearer " + tokenService.gerar(usuario).getTokenValue()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(usuario.getId().toString()))
+                .andExpect(jsonPath("$.nome").value(usuario.getNome()))
+                .andExpect(jsonPath("$.email").value(usuario.getEmail()))
+                .andExpect(jsonPath("$.role").value(role.name()))
+                .andExpect(jsonPath("$.senha").doesNotExist());
+    }
 
     @ParameterizedTest
     @EnumSource(Role.class)
@@ -137,6 +161,7 @@ class JwtSecurityTest {
     void deveRejeitarRequisicaoSemToken() throws Exception {
         mvc.perform(get("/pedidos")).andExpect(status().isUnauthorized());
         mvc.perform(get("/tecnico/me")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/usuarios/me")).andExpect(status().isUnauthorized());
         verifyNoInteractions(pedidosService);
         verifyNoInteractions(tecnicoRepository);
     }
@@ -144,6 +169,8 @@ class JwtSecurityTest {
     @Test
     void deveRejeitarTokenInvalido() throws Exception {
         mvc.perform(get("/pedidos").header("Authorization", "Bearer invalido"))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(get("/usuarios/me").header("Authorization", "Bearer invalido"))
                 .andExpect(status().isUnauthorized());
         verifyNoInteractions(pedidosService, repository);
     }

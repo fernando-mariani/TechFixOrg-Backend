@@ -51,6 +51,7 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.POST, "/tecnico/params").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/admin", "/admin/**").hasAuthority("ADMIN")
+                        .requestMatchers("/gerente", "/gerente/**").hasAuthority("GERENTE")
                         .requestMatchers(HttpMethod.GET, "/pedidos", "/pedidos/busca")
                         .hasAnyAuthority("ADMIN", "GERENTE")
                         .requestMatchers(HttpMethod.GET, "/pedidos/meus", "/tecnico/me").hasAuthority("TECNICO")
